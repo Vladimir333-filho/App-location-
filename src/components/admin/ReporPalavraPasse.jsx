@@ -25,8 +25,8 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
 
   async function gravar() {
     setErro('');
-    if (nova.length < 6) {
-      setErro('A nova palavra-passe precisa de pelo menos 6 caracteres.');
+    if (nova.length < 8) {
+      setErro('A nova palavra-passe precisa de pelo menos 8 caracteres.');
       return;
     }
     if (nova !== repetir) {
@@ -102,7 +102,7 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
         ) : (
           <>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Não é preciso saber a palavra-passe antiga. Escolhe a nova e passa-a ao motorista.
+              Não é preciso saber a palavra-passe antiga. Confirma primeiro a identidade do motorista, escolhe uma palavra-passe com pelo menos 8 caracteres e entrega-a por um canal privado.
             </p>
 
             <Campo rotulo="Nova palavra-passe">
