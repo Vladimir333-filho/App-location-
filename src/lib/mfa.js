@@ -50,9 +50,13 @@ function normalizarFatores(dados) {
 /* A listagem de factores usa a API REST; GET /auth/v1/factors não é suportado. */
 async function listarFatoresServidor(sessao) {
   const { url, anonKey } = getLigacao();
-  const resposta = await fetch(`${url}/rest/v1/auth/factors?select=id,factor_type,status,friendly_name`, {
+  const resposta = await fetch(`${url}/rest/v1/factors?select=id,factor_type,status,friendly_name`, {
     method: 'GET',
-    headers: { ...cabecalhos(sessao?.access_token, anonKey), Accept: 'application/json' },
+    headers: {
+      ...cabecalhos(sessao?.access_token, anonKey),
+      Accept: 'application/json',
+      'Accept-Profile': 'auth',
+    },
   });
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
