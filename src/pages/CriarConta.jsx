@@ -62,7 +62,7 @@ export default function CriarConta() {
       // O Supabase cria o perfil na tabela "motoristas" através do trigger.
       const { sessao } = await registarConta(numero, palavraPasse, nome);
       if (sessao) {
-        window.location.href = '/quotas';
+        navigate('/quotas', { replace: true });
         return;
       }
       setAviso('Conta criada. Entra com o teu número e palavra-passe.');
@@ -90,7 +90,7 @@ export default function CriarConta() {
           } catch {
             /* se o perfil não puder ser criado agora, entra na mesma */
           }
-          window.location.href = '/';
+          navigate('/', { replace: true });
           return;
         } catch (segunda) {
           setJaExiste(true);
