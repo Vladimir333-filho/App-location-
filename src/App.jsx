@@ -14,6 +14,7 @@ import MinhasQuotas from '@/pages/MinhasQuotas';
 import PagarQuota from '@/pages/PagarQuota';
 import Historico from '@/pages/Historico';
 import Perfil from '@/pages/Perfil';
+import Seguranca from '@/pages/Seguranca';
 
 // Páginas Administração QuotaMob
 import Painel from '@/pages/admin/Painel';
@@ -58,6 +59,7 @@ export default function App() {
           <Route element={<RotaUtilizador />}>
             <Route element={<AppShell />}>
               <Route path="/perfil" element={<Perfil />} />
+              <Route path="/seguranca" element={<Seguranca />} />
             </Route>
           </Route>
 
