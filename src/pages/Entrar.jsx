@@ -8,7 +8,7 @@ import ConfigLigacao from '@/components/ConfigLigacao';
 
 export default function Entrar() {
   <SEO title="QuotaMob | Entrar na conta" description="Aceda à sua conta QuotaMob para consultar quotas semanais, pagamentos e informações da sua organização." />
-  const { estado, perfil, entrar, confirmarMfaLogin, erroPerfil } = useSessao();
+  const { estado, perfil, sessao, entrar, confirmarMfaLogin, erroPerfil } = useSessao();
   const navigate = useNavigate();
   const [telefone, setTelefone] = useState('');
   const [palavraPasse, setPalavraPasse] = useState('');
@@ -20,7 +20,7 @@ export default function Entrar() {
   const [codigoMfa, setCodigoMfa] = useState('');
 
   if (estado === 'pronto' && perfil) {
-    return <Navigate to={ehAdmin(perfil) ? '/admin' : '/quotas'} replace />;
+    return <Navigate to={sessao?.utilizador?.app_metadata?.quotamob_must_change_password === true ? '/alterar-senha' : (ehAdmin(perfil) ? '/admin' : '/quotas')} replace />;
   }
 
   async function submeter(evento) {
