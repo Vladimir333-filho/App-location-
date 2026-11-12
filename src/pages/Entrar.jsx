@@ -68,7 +68,7 @@ export default function Entrar() {
     }
   }
 
-  const semPerfil = estado === 'pronto' && !perfil;
+  const semPerfil = estado === 'pronto' && !perfil && !erroPerfil;
 
   return (
     <div className="min-h-screen bg-background">
@@ -153,10 +153,10 @@ export default function Entrar() {
                 </div>
               </div>
 
-              {(erro || semPerfil) && (
+              {(erro || erroPerfil || semPerfil) && (
                 <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-700">
-                  {erro ||
-                    'A tua conta ainda não tem perfil de motorista. Usa "Criar conta" com o mesmo número ou fala com o tesoureiro.'}
+                  {erro || erroPerfil ||
+                    'A tua conta ainda não tem perfil de motorista. Contacta o tesoureiro para recuperar o perfil sem criar outra conta.'}
                 </p>
               )}
 
