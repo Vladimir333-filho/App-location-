@@ -1,7 +1,6 @@
 import {
   BUCKET_COMPROVATIVOS,
   contarLinhas,
-  definirSenhaExistente,
   enviarComprovativo,
   linkComprovativo,
   pedir,
@@ -199,9 +198,8 @@ export async function criarMotorista({ nome, telefone, palavraPasse, role }) {
     utilizadorId = utilizador?.id || null;
   } catch (falha) {
     if (!falha.jaExiste) throw falha;
-    // O número ainda tem conta na autenticação (motorista removido antes):
-    // reaproveitamos a conta e gravamos a palavra-passe nova.
-    utilizadorId = await definirSenhaExistente(telefone, palavraPasse);
+    // Nunca redefinir silenciosamente a palavra-passe de uma conta já existente.
+    throw new Error('Este número já tem uma conta de autenticação. Se estiver sem perfil, usa a opção "Recuperar" na gestão de motoristas; caso contrário, edita o perfil existente.');
   }
 
   return criarRegistoMotorista({ nome, telefone, role, utilizadorId });
