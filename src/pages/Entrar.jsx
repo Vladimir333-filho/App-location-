@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import SEO from '@/components/SEO';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Lock, ShieldCheck, Smartphone, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, ShieldCheck, Smartphone, UserPlus, KeyRound } from 'lucide-react';
 import { useSessao, ehAdmin } from '@/lib/sessao';
 import { ligacaoConfigurada } from '@/lib/supabaseConfig';
 import ConfigLigacao from '@/components/ConfigLigacao';
 
 export default function Entrar() {
   <SEO title="QuotaMob | Entrar na conta" description="Aceda à sua conta QuotaMob para consultar quotas semanais, pagamentos e informações da sua organização." />
-  const { estado, perfil, entrar, erroPerfil } = useSessao();
+  const { estado, perfil, entrar, confirmarMfaLogin, erroPerfil } = useSessao();
   const navigate = useNavigate();
   const [telefone, setTelefone] = useState('');
   const [palavraPasse, setPalavraPasse] = useState('');
@@ -16,6 +16,8 @@ export default function Entrar() {
   const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
   const [configAberta, setConfigAberta] = useState(!ligacaoConfigurada());
+  const [desafioMfa, setDesafioMfa] = useState(null);
+  const [codigoMfa, setCodigoMfa] = useState('');
 
   if (estado === 'pronto' && perfil) {
     return <Navigate to={ehAdmin(perfil) ? '/admin' : '/quotas'} replace />;
@@ -35,9 +37,32 @@ export default function Entrar() {
     }
     setAEnviar(true);
     try {
-      await entrar(numero, palavraPasse);
+      const resultado = await entrar(numero, palavraPasse);
+      if (resultado?.mfaRequired) {
+        setDesafioMfa(resultado);
+        setPalavraPasse('');
+      }
     } catch (falha) {
       setErro(falha.message);
+    } finally {
+      setAEnviar(false);
+    }
+  }
+
+  async function confirmarCodigoMfa(evento) {
+    evento.preventDefault();
+    setErro('');
+    if (!/^\\d{6}$/.test(codigoMfa)) {
+      setErro('Introduz o código de 6 dígitos do Google Authenticator.');
+      return;
+    }
+    setAEnviar(true);
+    try {
+      await confirmarMfaLogin(desafioMfa, codigoMfa);
+      setDesafioMfa(null);
+      setCodigoMfa('');
+    } catch (falha) {
+      setErro(falha.message || 'Código inválido. Confirma o relógio do telemóvel e tenta novamente.');
     } finally {
       setAEnviar(false);
     }
@@ -64,6 +89,22 @@ export default function Entrar() {
 
         <main className="-mt-12 flex-1 px-5 pb-10">
           <div className="animar-surgir rounded-[28px] bg-white p-6 shadow-[0_24px_60px_-30px_rgba(11,37,69,0.55)] ring-1 ring-border/60">
+            {desafioMfa ? (
+              <>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><KeyRound className="h-6 w-6" /></span>
+                <h2 className="mt-3 font-heading text-xl font-bold text-foreground">Verificação em duas etapas</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Abre o Google Authenticator e introduz o código de 6 dígitos da tua conta QuotaMob.</p>
+                <form onSubmit={confirmarCodigoMfa} className="mt-6 space-y-4">
+                  <input value={codigoMfa} onChange={(e) => { setCodigoMfa(e.target.value.replace(/\\D/g, '').slice(0, 6)); setErro(''); }} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input bg-white px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] outline-none focus:border-primary" />
+                  {erro && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-700">{erro}</p>}
+                  <button type="submit" disabled={aEnviar} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground disabled:opacity-60">
+                    {aEnviar && <Loader2 className="h-5 w-5 animate-spin" />}{aEnviar ? 'A verificar…' : 'Confirmar código'}
+                  </button>
+                  <button type="button" onClick={() => { setDesafioMfa(null); setCodigoMfa(''); setErro(''); }} className="w-full py-2 text-xs font-semibold text-primary">Voltar ao início de sessão</button>
+                </form>
+              </>
+            ) : (
+              <>
             <h2 className="font-heading text-xl font-bold text-foreground">Entrar</h2>
             <p className="mt-1 text-sm text-muted-foreground">Número de telefone e palavra-passe.</p>
 
@@ -147,6 +188,8 @@ export default function Entrar() {
                 <UserPlus className="h-4 w-4" /> Criar conta de motorista
               </button>
             </div>
+              </>
+            )}
           </div>
 
           {!ligacaoConfigurada() && (
