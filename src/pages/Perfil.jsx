@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ShieldCheck, ChevronRight } from 'lucide-react';
 import SEO from '@/components/SEO';
 import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import FotoPerfil from '@/components/FotoPerfil';
@@ -88,6 +90,15 @@ export default function Perfil() {
       </div>
 
       <ErroCaixa mensagem={erro} />
+
+      <Link to="/seguranca" className="card-suave flex items-center gap-3 p-4 transition active:scale-[0.99]">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary"><ShieldCheck className="h-5 w-5" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-foreground">Segurança da conta</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">Google Authenticator e verificação em duas etapas</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </Link>
 
       <div className="card-suave divide-y divide-border/70 p-0">
         {[
