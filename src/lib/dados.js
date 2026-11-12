@@ -1,6 +1,5 @@
 import {
   BUCKET_COMPROVATIVOS,
-  apagarContaAutenticacao,
   contarLinhas,
   definirSenhaExistente,
   enviarComprovativo,
