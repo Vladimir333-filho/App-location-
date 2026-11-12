@@ -52,7 +52,7 @@ export default function Entrar() {
   async function confirmarCodigoMfa(evento) {
     evento.preventDefault();
     setErro('');
-    if (!/^\\d{6}$/.test(codigoMfa)) {
+    if (!/^\d{6}$/.test(codigoMfa)) {
       setErro('Introduz o código de 6 dígitos do Google Authenticator.');
       return;
     }
@@ -95,7 +95,7 @@ export default function Entrar() {
                 <h2 className="mt-3 font-heading text-xl font-bold text-foreground">Verificação em duas etapas</h2>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Abre o Google Authenticator e introduz o código de 6 dígitos da tua conta QuotaMob.</p>
                 <form onSubmit={confirmarCodigoMfa} className="mt-6 space-y-4">
-                  <input value={codigoMfa} onChange={(e) => { setCodigoMfa(e.target.value.replace(/\\D/g, '').slice(0, 6)); setErro(''); }} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input bg-white px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] outline-none focus:border-primary" />
+                  <input value={codigoMfa} onChange={(e) => { setCodigoMfa(e.target.value.replace(/\D/g, '').slice(0, 6)); setErro(''); }} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input bg-white px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] outline-none focus:border-primary" />
                   {erro && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-700">{erro}</p>}
                   <button type="submit" disabled={aEnviar} className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground disabled:opacity-60">
                     {aEnviar && <Loader2 className="h-5 w-5 animate-spin" />}{aEnviar ? 'A verificar…' : 'Confirmar código'}
