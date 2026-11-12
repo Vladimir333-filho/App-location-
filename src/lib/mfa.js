@@ -47,6 +47,21 @@ function normalizarFatores(dados) {
   return [...(dados?.totp || []), ...(dados?.phone || [])];
 }
 
+/* A listagem de factores usa a API REST; GET /auth/v1/factors não é suportado. */
+async function listarFatoresServidor(sessao) {
+  const { url, anonKey } = getLigacao();
+  const resposta = await fetch(`${url}/rest/v1/auth/factors?select=id,factor_type,status,friendly_name`, {
+    method: 'GET',
+    headers: { ...cabecalhos(sessao?.access_token, anonKey), Accept: 'application/json' },
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) {
+    const detalhe = dados?.message || dados?.msg || dados?.error_description || dados?.error;
+    throw new Error(detalhe || `Não foi possível consultar a segurança da conta (${resposta.status}).`);
+  }
+  return normalizarFatores(dados);
+}
+
 export async function iniciarSessaoComMfa(telefone, palavraPasse) {
   const { url, anonKey } = getLigacao();
   const resposta = await fetch(`${url}/auth/v1/token?grant_type=password`, {
@@ -68,7 +83,7 @@ export async function iniciarSessaoComMfa(telefone, palavraPasse) {
     expira_em: Date.now() + (Number(dados.expires_in) || 3600) * 1000,
     utilizador: dados.user,
   };
-  const fatores = normalizarFatores(await authPedido('factors', sessaoPendente));
+  const fatores = await listarFatoresServidor(sessaoPendente);
   const fator = fatores.find((item) => item.factor_type === 'totp' && item.status === 'verified');
   if (fator) return { mfaRequired: true, sessao: sessaoPendente, factorId: fator.id };
 
@@ -90,7 +105,7 @@ export async function verificarMfaLogin({ sessao, factorId, codigo }) {
 export async function listarFatoresMfa() {
   const sessao = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || 'null');
   if (!sessao?.access_token) throw new Error('A sessão expirou. Entra novamente.');
-  return normalizarFatores(await authPedido('factors', sessao));
+  return await listarFatoresServidor(sessao);
 }
 
 export async function iniciarRegistoTotp(nome = 'QuotaMob') {
@@ -121,7 +136,7 @@ export async function removerFatorTotp(factorId) {
 
 
 export async function sessaoMfaExigeDesafio(sessao) {
-  const fatores = normalizarFatores(await authPedido('factors', sessao));
+  const fatores = await listarFatoresServidor(sessao);
   const temTotp = fatores.some((item) => item.factor_type === 'totp' && item.status === 'verified');
   if (!temTotp) return false;
   try {
