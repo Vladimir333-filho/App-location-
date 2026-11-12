@@ -25,12 +25,12 @@ export default function RecuperarSenha() {
   const [etapa, setEtapa] = useState('telefone');
   const [concluida, setConcluida] = useState(false);
 
-  const numero = telefone.replace(/\\D/g, '');
+  const numero = telefone.replace(/\D/g, '');
 
   async function pedirCodigo(evento) {
     evento.preventDefault();
     setErro('');
-    if (!/^9\\d{8}$/.test(numero)) {
+    if (!/^9\d{8}$/.test(numero)) {
       setErro('Escreve os 9 dígitos do teu número de telefone.');
       return;
     }
@@ -50,7 +50,7 @@ export default function RecuperarSenha() {
   async function confirmarCodigo(evento) {
     evento.preventDefault();
     setErro('');
-    if (!/^\\d{6}$/.test(codigo)) {
+    if (!/^\d{6}$/.test(codigo)) {
       setErro('Introduz o código de 6 dígitos.');
       return;
     }
@@ -136,7 +136,7 @@ export default function RecuperarSenha() {
                     <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <input
                       value={telefone}
-                      onChange={(e) => { setTelefone(e.target.value.replace(/[^\\d\\s]/g, '').slice(0, 11)); setErro(''); }}
+                      onChange={(e) => { setTelefone(e.target.value.replace(/[^\d\s]/g, '').slice(0, 11)); setErro(''); }}
                       inputMode="numeric"
                       autoComplete="tel-national"
                       placeholder="9XX XXX XXX"
@@ -163,7 +163,7 @@ export default function RecuperarSenha() {
                 )}
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Código de verificação</label>
-                  <input value={codigo} onChange={(e) => { setCodigo(e.target.value.replace(/\\D/g, '').slice(0, 6)); setErro(''); }} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input bg-white px-4 text-center font-mono text-xl font-bold tracking-[0.4em] outline-none focus:border-primary" />
+                  <input value={codigo} onChange={(e) => { setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6)); setErro(''); }} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input bg-white px-4 text-center font-mono text-xl font-bold tracking-[0.4em] outline-none focus:border-primary" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nova palavra-passe</label>
