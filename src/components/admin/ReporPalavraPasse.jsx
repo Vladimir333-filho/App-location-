@@ -90,7 +90,7 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
               </button>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Entrega esta senha temporária ao motorista por um canal privado. No primeiro acesso, ele será obrigado a criar uma nova senha. Entra com o número +244 {formatarTelefone(motorista.telefone)}.
+              Entrega esta senha temporária ao motorista por um canal privado. No próximo acesso, a aplicação vai exigir que ele crie uma senha pessoal.
             </p>
             <button
               onClick={fechar}
