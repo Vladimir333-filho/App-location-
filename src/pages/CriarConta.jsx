@@ -3,26 +3,9 @@ import SEO from '@/components/SEO';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Lock, Smartphone, User, UserPlus } from 'lucide-react';
 import { ehAdmin, useSessao } from '@/lib/sessao';
-import {
-  activarNumeroExistente,
-  entrar,
-  pedir,
-  registarConta,
-  reporSenhaAutomatica,
-} from '@/lib/supabaseClient';
-import { criarRegistoMotorista } from '@/lib/dados';
-
-// Contas antigas podem existir na autenticação sem perfil em "motoristas"
-// (por exemplo, um motorista eliminado). Sem o perfil, a app não o reconhece.
-async function garantirPerfil({ utilizadorId, nome, telefone }) {
-  if (!utilizadorId) return;
-  const linhas = await pedir('motoristas', { query: `select=id&id=eq.${utilizadorId}&limit=1` });
-  if (Array.isArray(linhas) && linhas.length > 0) return;
-  await criarRegistoMotorista({ nome, telefone, utilizadorId });
-}
+import { registarConta } from '@/lib/supabaseClient';
 
 export default function CriarConta() {
-  <SEO title="QuotaMob | Criar conta de motorista" description="Crie ou active a sua conta QuotaMob para acompanhar as quotas semanais e submeter comprovativos de pagamento." />
   const { estado, perfil } = useSessao();
   const navigate = useNavigate();
 
@@ -53,8 +36,8 @@ export default function CriarConta() {
       setErro('Escreve os 9 dígitos do teu número de telefone.');
       return;
     }
-    if (palavraPasse.length < 6) {
-      setErro('A palavra-passe deve ter pelo menos 6 caracteres.');
+    if (palavraPasse.length < 8) {
+      setErro('A palavra-passe deve ter pelo menos 8 caracteres.');
       return;
     }
 
@@ -72,37 +55,10 @@ export default function CriarConta() {
       setTimeout(() => navigate('/', { replace: true }), 1800);
     } catch (falha) {
       if (falha.jaExiste) {
-        // O número já tem conta: ativamos com a palavra-passe que ele acabou de escrever.
-        setAviso('Este número já tinha conta. A ativar com a tua palavra-passe…');
-        try {
-          try {
-            // Conta com perfil: repõe a palavra-passe (confirma o nome).
-            await reporSenhaAutomatica({ telefone: numero, nome: nome.trim(), palavraPasse });
-          } catch {
-            // Conta sem perfil (motorista apagado): reaproveita o número e recria o perfil.
-            await activarNumeroExistente({ telefone: numero, nome: nome.trim(), palavraPasse });
-          }
-          const sessao = await entrar(numero, palavraPasse);
-          try {
-            await garantirPerfil({
-              utilizadorId: sessao?.utilizador?.id,
-              nome: nome.trim(),
-              telefone: numero,
-            });
-          } catch {
-            /* se o perfil não puder ser criado agora, entra na mesma */
-          }
-          navigate('/', { replace: true });
-          return;
-        } catch (segunda) {
-          setJaExiste(true);
-          setErro(
-            segunda.message ||
-              'Este número já tem conta. Escreve o nome como está no registo para ativares a palavra-passe nova.',
-          );
-          setAEnviar(false);
-          return;
-        }
+        setJaExiste(true);
+        setErro('Este número já tem uma conta. Para proteger o acesso, confirma a posse do número através de SMS OTP na recuperação de palavra-passe.');
+        setAEnviar(false);
+        return;
       }
       setJaExiste(false);
       setErro(falha.message || 'Não foi possível criar a conta. Tenta outra vez.');
@@ -130,6 +86,7 @@ export default function CriarConta() {
         <main className="-mt-10 flex-1 px-5 pb-10">
           <div className="animar-surgir rounded-[28px] bg-white p-6 shadow-[0_24px_60px_-30px_rgba(11,37,69,0.55)] ring-1 ring-border/60">
             <form onSubmit={submeter} className="space-y-4">
+              <SEO title="QuotaMob | Criar conta de motorista" description="Crie ou active a sua conta QuotaMob para acompanhar as quotas semanais e submeter comprovativos de pagamento." />
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Nome completo
@@ -176,7 +133,7 @@ export default function CriarConta() {
                     onChange={(e) => setPalavraPasse(e.target.value)}
                     type={verChave ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     className="h-14 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground/70"
                   />
                   <button
