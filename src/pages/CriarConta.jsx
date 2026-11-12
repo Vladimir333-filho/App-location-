@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Lock, Smartphone, User, UserPlus } from 'lucide-react';
 import { ehAdmin, useSessao } from '@/lib/sessao';
@@ -21,6 +22,7 @@ async function garantirPerfil({ utilizadorId, nome, telefone }) {
 }
 
 export default function CriarConta() {
+  <SEO title="QuotaMob | Criar conta de motorista" description="Crie ou active a sua conta QuotaMob para acompanhar as quotas semanais e submeter comprovativos de pagamento." />
   const { estado, perfil } = useSessao();
   const navigate = useNavigate();
 
