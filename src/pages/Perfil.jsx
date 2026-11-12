@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import SEO from '@/components/SEO';
 import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import FotoPerfil from '@/components/FotoPerfil';
 import { ErroCaixa } from '@/components/Estados';
@@ -9,6 +10,7 @@ import { useSessao } from '@/lib/sessao';
 const LIMITE = 5 * 1024 * 1024;
 
 export default function Perfil() {
+  <SEO title="QuotaMob | O meu perfil" description="Consulte e actualize os dados do seu perfil de utilizador na plataforma QuotaMob." />
   const { perfil, nomeExibido, userId, administrador, recarregarPerfil } = useSessao();
   const [aEnviar, setAEnviar] = useState(false);
   const [erro, setErro] = useState('');
