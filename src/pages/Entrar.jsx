@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Lock, ShieldCheck, Smartphone, UserPlus } from 'lucide-react';
 import { useSessao, ehAdmin } from '@/lib/sessao';
@@ -6,6 +7,7 @@ import { ligacaoConfigurada } from '@/lib/supabaseConfig';
 import ConfigLigacao from '@/components/ConfigLigacao';
 
 export default function Entrar() {
+  <SEO title="QuotaMob | Entrar na conta" description="Aceda à sua conta QuotaMob para consultar quotas semanais, pagamentos e informações da sua organização." />
   const { estado, perfil, entrar, erroPerfil } = useSessao();
   const navigate = useNavigate();
   const [telefone, setTelefone] = useState('');
