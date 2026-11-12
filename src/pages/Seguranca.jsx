@@ -42,7 +42,7 @@ export default function Seguranca() {
 
   async function confirmar() {
     setErro('');
-    if (!/^\\d{6}$/.test(codigo)) {
+    if (!/^\d{6}$/.test(codigo)) {
       setErro('Introduz o código de 6 dígitos apresentado no autenticador.');
       return;
     }
@@ -119,7 +119,7 @@ export default function Seguranca() {
                 <p className="text-xs text-muted-foreground">Se não conseguires ler o QR, introduz manualmente esta chave no autenticador:</p>
                 <div className="break-all rounded-xl bg-muted p-3 font-mono text-xs font-bold text-foreground">{registo.segredo}</div>
                 <p className="text-sm font-semibold text-foreground">2. Introduz o código de 6 dígitos</p>
-                <input value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input px-4 text-center font-mono text-2xl font-bold tracking-[0.4em] outline-none focus:border-primary" />
+                <input value={codigo} onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="h-14 w-full rounded-2xl border border-input px-4 text-center font-mono text-2xl font-bold tracking-[0.4em] outline-none focus:border-primary" />
                 <button onClick={confirmar} disabled={aProcessar} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-60">{aProcessar && <Loader2 className="h-4 w-4 animate-spin" />} Confirmar e activar</button>
                 <button onClick={() => { setRegisto(null); setCodigo(''); }} className="h-10 w-full text-xs font-semibold text-muted-foreground">Cancelar configuração</button>
               </div>
