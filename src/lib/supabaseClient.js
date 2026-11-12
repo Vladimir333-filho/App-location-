@@ -164,6 +164,14 @@ export async function activarNumeroExistente({ telefone, nome, palavraPasse }) {
   });
 }
 
+// Reconstitui apenas o perfil em falta, mantendo o UUID e a palavra-passe da conta Auth.
+export async function reconciliarPerfilOrfao({ telefone, nome }) {
+  return chamarFuncao('quotamob_reconciliar_perfil_orfao', {
+    p_telefone: String(telefone || '').replace(/\D/g, ''),
+    p_nome: String(nome || '').trim(),
+  });
+}
+
 // Apaga a conta de autenticação de um motorista eliminado. Sem isto, o número
 // fica preso para sempre e ninguém o consegue voltar a registar.
 export async function apagarContaAutenticacao(utilizadorId) {
