@@ -60,7 +60,7 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
         <div className="mb-1 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
-            <h2 className="font-heading text-lg font-bold text-foreground">Repor palavra-passe</h2>
+            <h2 className="font-heading text-lg font-bold text-foreground">Definir senha temporária</h2>
           </div>
           <button
             onClick={fechar}
@@ -79,7 +79,7 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
           <>
             <div className="mt-4 flex flex-col items-center rounded-2xl bg-emerald-50 px-4 py-5 text-center ring-1 ring-emerald-100">
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-              <p className="mt-2 font-heading text-sm font-bold text-emerald-900">Palavra-passe reposta</p>
+              <p className="mt-2 font-heading text-sm font-bold text-emerald-900">Senha temporária definida</p>
               <p className="mt-1 font-mono text-lg font-bold text-emerald-900">{feita}</p>
               <button
                 onClick={copiar}
@@ -90,7 +90,7 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
               </button>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Dá esta palavra-passe ao motorista. Ele entra com o número +244 {formatarTelefone(motorista.telefone)}.
+              Entrega esta senha temporária ao motorista por um canal privado. No primeiro acesso, ele será obrigado a criar uma nova senha. Entra com o número +244 {formatarTelefone(motorista.telefone)}.
             </p>
             <button
               onClick={fechar}
@@ -102,10 +102,10 @@ export default function ReporPalavraPasse({ motorista, aoFechar }) {
         ) : (
           <>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              Não é preciso saber a palavra-passe antiga. Confirma primeiro a identidade do motorista, escolhe uma palavra-passe com pelo menos 8 caracteres e entrega-a por um canal privado.
+              Não é preciso saber a senha antiga. Confirma primeiro a identidade do motorista, define uma senha temporária com pelo menos 8 caracteres e entrega-a por um canal privado. O motorista terá de a alterar no próximo acesso.
             </p>
 
-            <Campo rotulo="Nova palavra-passe">
+            <Campo rotulo="Senha temporária">
               <div className="flex items-center gap-2 rounded-2xl border border-input px-3 focus-within:border-primary">
                 <input
                   type={ver ? 'text' : 'password'}
