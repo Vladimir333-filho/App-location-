@@ -24,6 +24,7 @@ export default function RecuperarSenha() {
   const [aEnviar, setAEnviar] = useState(false);
   const [etapa, setEtapa] = useState('telefone');
   const [concluida, setConcluida] = useState(false);
+  const [modoTeste, setModoTeste] = useState(false);
 
   const numero = telefone.replace(/\D/g, '');
 
@@ -73,12 +74,13 @@ export default function RecuperarSenha() {
 
     setAEnviar(true);
     try {
-      await confirmarOtpRecuperacao({
+      const resultado = await confirmarOtpRecuperacao({
         telefone: numero,
         otpId,
         codigo,
         novaPalavraPasse: nova,
       });
+      setModoTeste(resultado.test_mode === true);
       setNova('');
       setRepetir('');
       setCodigo('');
@@ -118,12 +120,12 @@ export default function RecuperarSenha() {
                 <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-emerald-600">
                   <CheckCircle2 className="h-7 w-7" />
                 </span>
-                <h2 className="mt-3 font-heading text-lg font-bold text-foreground">Palavra-passe actualizada</h2>
+                <h2 className="mt-3 font-heading text-lg font-bold text-foreground">{modoTeste ? "Código de teste confirmado" : "Palavra-passe actualizada"}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  A palavra-passe da conta associada a <strong className="font-semibold text-foreground">+244 {formatarTelefone(numero)}</strong> foi actualizada. Já podes entrar com a nova palavra-passe.
+                  {modoTeste ? <>O código Sandbox foi aceite para <strong className="font-semibold text-foreground">+244 {formatarTelefone(numero)}</strong>. A palavra-passe real não foi alterada. Este teste confirma apenas a integração OTP.</> : <>A palavra-passe da conta associada a <strong className="font-semibold text-foreground">+244 {formatarTelefone(numero)}</strong> foi actualizada. Já podes entrar com a nova palavra-passe.</>}
                 </p>
                 <button onClick={() => navigate('/')} className="mt-4 h-[52px] w-full rounded-2xl bg-primary text-sm font-bold text-primary-foreground">
-                  Entrar agora
+                  {modoTeste ? "Voltar ao início" : "Entrar agora"}
                 </button>
               </div>
             ) : etapa === 'telefone' ? (
