@@ -123,6 +123,27 @@ export async function definirSenhaExistente(telefone, palavraPasseNova) {
   });
 }
 
+// Recuperação OTP por Edge Function, sem exigir sessão autenticada.
+async function chamarRecuperacaoOtp(corpo) {
+  const { url, anonKey } = config();
+  const resposta = await pedidoFetch(`${url}/functions/v1/quotamob-recuperar-senha`, {
+    method: 'POST',
+    headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo),
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) throw new Error(dados?.error || 'Não foi possível concluir a recuperação. Tenta novamente.');
+  return dados;
+}
+
+export async function solicitarOtpRecuperacao(telefone) {
+  return chamarRecuperacaoOtp({ action: 'send', phone: telefone });
+}
+
+export async function confirmarOtpRecuperacao({ telefone, otpId, codigo, novaPalavraPasse }) {
+  return chamarRecuperacaoOtp({ action: 'verify', phone: telefone, otp_id: otpId, code: codigo, new_password: novaPalavraPasse });
+}
+
 // Motorista repõe a palavra-passe sozinho, sem passar pelo tesoureiro.
 export async function reporSenhaAutomatica({ telefone, nome, palavraPasse }) {
   await chamarFuncao('quotamob_repor_senha', {
