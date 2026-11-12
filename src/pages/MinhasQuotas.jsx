@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import SEO from '@/components/SEO';
 import { CheckCircle2, Wallet } from 'lucide-react';
 import AlertaAtraso from '@/components/AlertaAtraso';
 import QuotaCard from '@/components/QuotaCard';
@@ -14,6 +15,7 @@ const FILTROS = [
 ];
 
 export default function MinhasQuotas() {
+  <SEO title="QuotaMob | As minhas quotas" description="Consulte as suas quotas semanais, valores, datas de vencimento e estado dos pagamentos na QuotaMob." />
   const { perfil, nomeExibido } = useSessao();
   const [quotas, setQuotas] = useState([]);
   const [carregando, setCarregando] = useState(true);
