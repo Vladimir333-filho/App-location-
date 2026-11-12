@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Camera, CheckCircle2, CreditCard, KeyRound } from 'lucide-react';
 import CartaoScript from '@/components/admin/CartaoScript';
 import { lerDadosPagamento, guardarDadosPagamento } from '@/lib/configPagamento';
@@ -13,6 +14,7 @@ function linkSqlEditor() {
 }
 
 export default function Configuracoes() {
+  <SEO title="QuotaMob | Configurações de pagamento" description="Configure os dados e as instruções de pagamento apresentados aos motoristas na plataforma QuotaMob." />
   const [dados, setDados] = useState(lerDadosPagamento());
   const [guardado, setGuardado] = useState(false);
 
