@@ -56,7 +56,7 @@ export default function CriarConta() {
     } catch (falha) {
       if (falha.jaExiste) {
         setJaExiste(true);
-        setErro('Este número já tem uma conta. Para proteger o acesso, confirma a posse do número através de SMS OTP na recuperação de palavra-passe.');
+        setErro('Este número já tem uma conta. Não cries outra conta. Pede ao tesoureiro para verificar a identidade e recuperar o perfil existente.');
         setAEnviar(false);
         return;
       }
