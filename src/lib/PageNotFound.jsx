@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
+import SEO from '@/components/SEO';
 
 export default function PageNotFound() {
+  <SEO title="QuotaMob | Página não encontrada" description="A página que procura não foi encontrada. Regresse à QuotaMob e continue a utilizar a plataforma." />
   const location = useLocation();
   const pageName = location.pathname.substring(1);
 
