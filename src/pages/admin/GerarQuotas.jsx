@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import SEO from '@/components/SEO';
 import { CalendarPlus, CheckCircle2, Loader2 } from 'lucide-react';
 import QuotasGeradas from '@/components/admin/QuotasGeradas';
 import { Carregando, ErroCaixa } from '@/components/Estados';
@@ -15,6 +16,7 @@ import {
 import { formatKz, formatData, hojeISO } from '@/lib/format';
 
 export default function GerarQuotas() {
+  <SEO title="QuotaMob | Gestão de quotas" description="Gere e consulte as quotas semanais dos motoristas, com controlo de valores e datas de vencimento." />
   const [motoristas, setMotoristas] = useState([]);
   const [quotas, setQuotas] = useState([]);
   const [quotasComPagamento, setQuotasComPagamento] = useState(new Set());
