@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SEO from '@/components/SEO';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, CheckCircle2, Copy, FileText, Loader2, Upload, X } from 'lucide-react';
 import { Carregando, ErroCaixa } from '@/components/Estados';
@@ -10,6 +11,7 @@ import { useSessao } from '@/lib/sessao';
 import { tamanhoLegivel, validarComprovativo } from '@/lib/validarComprovativo';
 
 export default function PagarQuota() {
+  <SEO title="QuotaMob | Pagar quota" description="Consulte os dados de pagamento e submeta o comprovativo da sua quota semanal na plataforma QuotaMob." />
   const { quotaId } = useParams();
   const navigate = useNavigate();
   const { perfil } = useSessao();
