@@ -114,6 +114,36 @@ export async function reporPalavraPasse(telefone, palavraPasseNova) {
   return true;
 }
 
+// O motorista altera a senha temporária após entrar. A flag só é removida
+// pelo servidor depois de a Auth confirmar a nova senha.
+export async function alterarSenhaTemporaria(palavraPasseNova) {
+  if (String(palavraPasseNova || '').length < 8) {
+    throw new Error('A palavra-passe precisa de pelo menos 8 caracteres.');
+  }
+  const { url, anonKey } = config();
+  const sessao = await sessaoValida();
+  if (!sessao?.access_token) throw new Error('A sessão expirou. Entra novamente.');
+
+  const resposta = await pedidoFetch(`${url}/auth/v1/user`, {
+    method: 'PUT',
+    headers: { ...cabecalhos(sessao.access_token, anonKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: palavraPasseNova }),
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) {
+    const detalhe = dados?.msg || dados?.message || dados?.error_description || dados?.error;
+    throw new Error(detalhe || 'Não foi possível actualizar a palavra-passe.');
+  }
+
+  await chamarFuncao('quotamob_concluir_alteracao_senha', {});
+  const utilizador = { ...(sessao.utilizador || {}) };
+  const appMetadata = { ...(utilizador.app_metadata || {}) };
+  delete appMetadata.quotamob_must_change_password;
+  utilizador.app_metadata = appMetadata;
+  gravarSessao({ ...sessao, utilizador });
+  return true;
+}
+
 // Contas antigas que ficaram na autenticação: a palavra-passe é redefinida e o
 // número pode voltar a ser usado. Devolve o id do utilizador.
 export async function definirSenhaExistente(telefone, palavraPasseNova) {
