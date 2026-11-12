@@ -118,3 +118,16 @@ export async function removerFatorTotp(factorId) {
   await authPedido(`factors/${encodeURIComponent(factorId)}`, sessao, { metodo: 'DELETE' });
   return true;
 }
+
+
+export async function sessaoMfaExigeDesafio(sessao) {
+  const fatores = normalizarFatores(await authPedido('factors', sessao));
+  const temTotp = fatores.some((item) => item.factor_type === 'totp' && item.status === 'verified');
+  if (!temTotp) return false;
+  try {
+    const payload = JSON.parse(atob(sessao.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.aal !== 'aal2';
+  } catch {
+    return true;
+  }
+}
