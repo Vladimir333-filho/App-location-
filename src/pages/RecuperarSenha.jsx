@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SEO from '@/components/SEO';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import { reporSenhaAutomatica } from '@/lib/supabaseClient';
 import { formatarTelefone } from '@/lib/format';
 
 export default function RecuperarSenha() {
+  <SEO title="QuotaMob | Recuperar palavra-passe" description="Recupere o acesso à sua conta QuotaMob e siga as instruções para voltar a entrar na plataforma." />
   const navigate = useNavigate();
   const [telefone, setTelefone] = useState('');
   const [nome, setNome] = useState('');
