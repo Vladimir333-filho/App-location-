@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import SEO from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarRange, Download, Loader2, TrendingUp, Undo2, Users, Wallet } from 'lucide-react';
 import EmAtraso from '@/components/admin/EmAtraso';
@@ -16,6 +17,7 @@ const ESTADOS = [
 ];
 
 export default function Painel() {
+  <SEO title="QuotaMob | Painel de administração" description="Acompanhe os indicadores de quotas, pagamentos, motoristas e actividade financeira da organização." />
   const [motoristas, setMotoristas] = useState([]);
   const [quotas, setQuotas] = useState([]);
   const [pagamentos, setPagamentos] = useState([]);
