@@ -318,40 +318,21 @@ export async function eliminarQuotas(ids) {
 }
 
 export async function eliminarMotorista(motoristaId) {
-  // A auditoria dos pagamentos aponta para "pagamentos": tem de sair primeiro.
-  const pagamentosDoMotorista = await pedirTudo(
-    'pagamentos',
-    `select=id&motorista_id=eq.${motoristaId}`,
-  );
-  const idsPagamentos = (Array.isArray(pagamentosDoMotorista) ? pagamentosDoMotorista : []).map((linha) => linha.id);
-  await limparAuditoria(idsPagamentos);
+  // Eliminação lógica: preserva quotas, pagamentos, comprovativos e auditoria.
+  // Nunca apagar o perfil antes da conta Auth: isso criava contas órfãs.
+  if (!motoristaId) throw new Error('Identificador do motorista inválido.');
 
-  await pedir('pagamentos', { metodo: 'DELETE', query: `motorista_id=eq.${motoristaId}`, prefer: 'return=minimal' });
-  await pedir('quotas', { metodo: 'DELETE', query: `motorista_id=eq.${motoristaId}`, prefer: 'return=minimal' });
-
-  const apagados = await pedir('motoristas', {
-    metodo: 'DELETE',
+  const resultado = await pedir('motoristas', {
+    metodo: 'PATCH',
     query: `id=eq.${motoristaId}`,
+    corpo: { ativo: false },
     prefer: 'return=representation',
   });
-  const total = Array.isArray(apagados) ? apagados.length : 0;
-  if (total === 0) {
-    const restantes = await pedir('motoristas', { query: `select=id&id=eq.${motoristaId}&limit=1` });
-    if (Array.isArray(restantes) && restantes.length > 0) {
-      throw explicarFalhaAoCancellar('motoristas', null);
-    }
-  }
 
-  // Sai também a conta de autenticação: sem isto o número fica preso e ninguém
-  // o consegue voltar a registar. Se o script antigo ainda estiver no Supabase,
-  // o número é reaproveitado no próximo registo.
-  try {
-    await apagarContaAutenticacao(motoristaId);
-  } catch {
-    /* conta órfã: resolvida no registo seguinte */
+  if (Array.isArray(resultado) && resultado.length === 0) {
+    throw new Error('Não foi possível desactivar o motorista. Confirma as permissões e tenta novamente.');
   }
-
-  return total;
+  return Array.isArray(resultado) ? resultado.length : 1;
 }
 
 export async function contarPagamentosEmAnalise() {
