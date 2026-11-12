@@ -4,6 +4,7 @@ import { KeyRound, Loader2, Pencil, Plus, Search, Trash2, UserPlus, Users } from
 import ReporPalavraPasse from '@/components/admin/ReporPalavraPasse';
 import { Carregando, ErroCaixa, Vazio } from '@/components/Estados';
 import { atualizarMotorista, criarMotorista, eliminarMotorista, listarMotoristas } from '@/lib/dados';
+import { reconciliarPerfilOrfao } from '@/lib/supabaseClient';
 import { formatarTelefone, limparTelefone } from '@/lib/format';
 
 const NOVO = { nome: '', telefone: '', palavraPasse: '', role: 'motorista' };
@@ -20,6 +21,8 @@ export default function Motoristas() {
   const [aEliminar, setAEliminar] = useState(null);
   const [aApagar, setAApagar] = useState(false);
   const [aReporSenha, setAReporSenha] = useState(null);
+  const [reconciliacao, setReconciliacao] = useState(null);
+  const [aReconciliar, setAReconciliar] = useState(false);
 
   async function carregar() {
     setCarregando(true);
@@ -100,7 +103,7 @@ export default function Motoristas() {
     setAApagar(true);
     try {
       await eliminarMotorista(aEliminar.id);
-      setMotoristas((anteriores) => anteriores.filter((item) => item.id !== aEliminar.id));
+      setMotoristas((anteriores) => anteriores.map((item) => item.id === aEliminar.id ? { ...item, ativo: false } : item));
       setAEliminar(null);
     } catch (falha) {
       setErro(falha.message);
@@ -130,16 +133,24 @@ export default function Motoristas() {
           <h1 className="font-heading text-2xl font-extrabold text-foreground">Motoristas</h1>
           <p className="mt-1 text-sm text-muted-foreground">{motoristas.length} registados</p>
         </div>
-        <button
-          onClick={() => {
-            setCriado('');
-            setErro('');
-            setFormulario({ ...NOVO });
-          }}
-          className="flex h-11 items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-bold text-primary-foreground"
-        >
-          <Plus className="h-4 w-4" /> Novo
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setErro(''); setReconciliacao({ nome: '', telefone: '' }); }}
+            className="flex h-11 items-center gap-1.5 rounded-2xl border border-primary/20 bg-white px-3 text-[11px] font-bold text-primary"
+          >
+            <KeyRound className="h-4 w-4" /> Recuperar
+          </button>
+          <button
+            onClick={() => {
+              setCriado('');
+              setErro('');
+              setFormulario({ ...NOVO });
+            }}
+            className="flex h-11 items-center gap-1.5 rounded-2xl bg-primary px-4 text-xs font-bold text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" /> Novo
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 rounded-2xl bg-white px-3 ring-1 ring-border/70">
@@ -317,15 +328,63 @@ export default function Motoristas() {
         </div>
       )}
 
+      {reconciliacao && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/50 p-4 backdrop-blur-sm">
+          <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
+            <h2 className="font-heading text-lg font-bold text-foreground">Recuperar conta sem perfil</h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Use apenas depois de confirmar a identidade do titular. A conta e a palavra-passe existentes serão preservadas.
+            </p>
+            <Campo rotulo="Nome completo confirmado">
+              <input value={reconciliacao.nome} onChange={(e) => setReconciliacao({ ...reconciliacao, nome: e.target.value })}
+                className="h-12 w-full rounded-2xl border border-input px-3 text-sm outline-none focus:border-primary" />
+            </Campo>
+            <Campo rotulo="Telefone (9 dígitos)">
+              <input value={reconciliacao.telefone} onChange={(e) => setReconciliacao({ ...reconciliacao, telefone: e.target.value.replace(/\\D/g, '').slice(0, 9) })}
+                inputMode="numeric" placeholder="923456789"
+                className="h-12 w-full rounded-2xl border border-input px-3 text-sm outline-none focus:border-primary" />
+            </Campo>
+            {erro && <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">{erro}</p>}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setReconciliacao(null)} className="h-12 rounded-2xl bg-muted text-sm font-bold text-foreground">Cancelar</button>
+              <button
+                disabled={aReconciliar}
+                onClick={async () => {
+                  setErro('');
+                  if (reconciliacao.nome.trim().length < 3 || reconciliacao.telefone.length !== 9) {
+                    setErro('Confirma o nome completo e os 9 dígitos do telefone.');
+                    return;
+                  }
+                  setAReconciliar(true);
+                  try {
+                    await reconciliarPerfilOrfao(reconciliacao);
+                    setReconciliacao(null);
+                    await carregar();
+                    setCriado('Perfil recuperado com o ID original. A palavra-passe e o histórico foram preservados.');
+                  } catch (falha) {
+                    setErro(falha.message || 'Não foi possível recuperar esta conta.');
+                  } finally {
+                    setAReconciliar(false);
+                  }
+                }}
+                className="h-12 rounded-2xl bg-primary text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {aReconciliar ? 'A recuperar…' : 'Recuperar perfil'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ReporPalavraPasse motorista={aReporSenha} aoFechar={() => setAReporSenha(null)} />
 
       {aEliminar && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/50 p-4 backdrop-blur-sm">
           <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
-            <h2 className="font-heading text-lg font-bold text-foreground">Eliminar motorista?</h2>
+            <h2 className="font-heading text-lg font-bold text-foreground">Desactivar motorista?</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">{aEliminar.nome}</span> sai da lista e as quotas e comprovativos
-              ligados a ele também são apagados. Esta acção não se pode desfazer.
+              <span className="font-semibold text-foreground">{aEliminar.nome}</span> ficará inactivo e deixará de poder entrar.
+              As quotas, pagamentos, comprovativos e o histórico serão preservados.
             </p>
 
             {erro && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">{erro}</p>}
@@ -343,7 +402,7 @@ export default function Motoristas() {
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60"
               >
                 {aApagar && <Loader2 className="h-4 w-4 animate-spin" />}
-                Eliminar
+                Desactivar
               </button>
             </div>
           </div>
