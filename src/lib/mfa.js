@@ -37,7 +37,7 @@ async function authPedido(caminho, sessao, { metodo = 'GET', corpo } = {}) {
 }
 
 function telefoneParaEmail(telefone) {
-  return `${String(telefone || '').replace(/\\D/g, '')}@quotamob.app`;
+  return `${String(telefone || '').replace(/\D/g, '')}@quotamob.app`;
 }
 
 function normalizarFatores(dados) {
@@ -82,7 +82,7 @@ export async function verificarMfaLogin({ sessao, factorId, codigo }) {
   if (!challengeId) throw new Error('Não foi possível iniciar o desafio do autenticador. Tenta novamente.');
   const resultado = await authPedido(`factors/${encodeURIComponent(factorId)}/verify`, sessao, {
     metodo: 'POST',
-    corpo: { challenge_id: challengeId, code: String(codigo).replace(/\\D/g, '') },
+    corpo: { challenge_id: challengeId, code: String(codigo).replace(/\D/g, '') },
   });
   return guardarSessao(resultado, sessao);
 }
@@ -107,7 +107,7 @@ export async function confirmarRegistoTotp(factorId, codigo) {
   if (!challengeId) throw new Error('Não foi possível iniciar a confirmação. Tenta novamente.');
   const resultado = await authPedido(`factors/${encodeURIComponent(factorId)}/verify`, sessao, {
     metodo: 'POST',
-    corpo: { challenge_id: challengeId, code: String(codigo).replace(/\\D/g, '') },
+    corpo: { challenge_id: challengeId, code: String(codigo).replace(/\D/g, '') },
   });
   return guardarSessao(resultado, sessao);
 }
