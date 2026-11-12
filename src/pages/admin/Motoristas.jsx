@@ -344,7 +344,7 @@ export default function Motoristas() {
                 className="h-12 w-full rounded-2xl border border-input px-3 text-sm outline-none focus:border-primary" />
             </Campo>
             <Campo rotulo="Telefone (9 dígitos)">
-              <input value={reconciliacao.telefone} onChange={(e) => setReconciliacao({ ...reconciliacao, telefone: e.target.value.replace(/\\D/g, '').slice(0, 9) })}
+              <input value={reconciliacao.telefone} onChange={(e) => setReconciliacao({ ...reconciliacao, telefone: e.target.value.replace(/\D/g, '').slice(0, 9) })}
                 inputMode="numeric" placeholder="923456789"
                 className="h-12 w-full rounded-2xl border border-input px-3 text-sm outline-none focus:border-primary" />
             </Campo>
