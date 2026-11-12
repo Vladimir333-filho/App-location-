@@ -335,9 +335,9 @@ export default function Motoristas() {
       {reconciliacao && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/50 p-4 backdrop-blur-sm">
           <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
-            <h2 className="font-heading text-lg font-bold text-foreground">Recuperar conta sem perfil</h2>
+            <h2 className="font-heading text-lg font-bold text-foreground">Recuperar perfil sem conta associada</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Use apenas depois de confirmar a identidade do titular. A conta e a palavra-passe existentes serão preservadas.
+              Esta operação serve apenas para uma conta de autenticação que não tem perfil associado. Não é uma reposição de senha. Confirma a identidade do titular antes de continuar.
             </p>
             <Campo rotulo="Nome completo confirmado">
               <input value={reconciliacao.nome} onChange={(e) => setReconciliacao({ ...reconciliacao, nome: e.target.value })}
