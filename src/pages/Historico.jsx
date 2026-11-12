@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import SEO from '@/components/SEO';
 import { Download, Receipt } from 'lucide-react';
 import EstadoBadge from '@/components/EstadoBadge';
 import { Carregando, ErroCaixa, Vazio } from '@/components/Estados';
@@ -8,6 +9,7 @@ import { descarregarRecibo } from '@/lib/recibo';
 import { useSessao } from '@/lib/sessao';
 
 export default function Historico() {
+  <SEO title="QuotaMob | Histórico de pagamentos" description="Consulte o histórico das suas quotas e pagamentos, incluindo os comprovativos e respectivos estados." />
   const { perfil } = useSessao();
   const [pagamentos, setPagamentos] = useState([]);
   const [quotasPorId, setQuotasPorId] = useState({});
