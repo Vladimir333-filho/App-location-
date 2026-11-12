@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import SEO from '@/components/SEO';
 import { Check, ClipboardCheck, ExternalLink, FileText, Loader2, Phone, X } from 'lucide-react';
 import EstadoBadge from '@/components/EstadoBadge';
 import { Carregando, ErroCaixa, Vazio } from '@/components/Estados';
@@ -13,6 +14,7 @@ import {
 import { formatData, formatKz, formatarTelefone } from '@/lib/format';
 
 export default function Aprovacoes() {
+  <SEO title="QuotaMob | Aprovação de pagamentos" description="Analise os comprovativos submetidos pelos motoristas e aprove ou rejeite pagamentos de quotas semanais." />
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
