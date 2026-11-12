@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import SEO from '@/components/SEO';
 import { KeyRound, Loader2, Pencil, Plus, Search, Trash2, UserPlus, Users } from 'lucide-react';
 import ReporPalavraPasse from '@/components/admin/ReporPalavraPasse';
 import { Carregando, ErroCaixa, Vazio } from '@/components/Estados';
@@ -8,6 +9,7 @@ import { formatarTelefone, limparTelefone } from '@/lib/format';
 const NOVO = { nome: '', telefone: '', palavraPasse: '', role: 'motorista' };
 
 export default function Motoristas() {
+  <SEO title="QuotaMob | Gestão de motoristas" description="Consulte e gira os registos, contactos e acessos dos motoristas associados à organização." />
   const [motoristas, setMotoristas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
