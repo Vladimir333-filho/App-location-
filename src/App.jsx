@@ -3,13 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import ScrollToTop from '@/components/ScrollToTop';
 import { SessaoProvider } from '@/lib/sessao';
 import AppShell, { ITENS_ADMIN } from '@/components/AppShell';
-import { RotaAdmin, RotaMotorista, RotaUtilizador } from '@/components/RotaProtegida';
+import { RotaAdmin, RotaMotorista, RotaUtilizador, RotaAlterarSenha } from '@/components/RotaProtegida';
 import PageNotFound from '@/lib/PageNotFound';
 
 // Páginas QuotaMob
 import Entrar from '@/pages/Entrar';
 import CriarConta from '@/pages/CriarConta';
 import RecuperarSenha from '@/pages/RecuperarSenha';
+import AlterarSenha from '@/pages/AlterarSenha';
 import MinhasQuotas from '@/pages/MinhasQuotas';
 import PagarQuota from '@/pages/PagarQuota';
 import Historico from '@/pages/Historico';
@@ -34,6 +35,9 @@ export default function App() {
           <Route path="/entrar" element={<Entrar />} />
           <Route path="/criar-conta" element={<CriarConta />} />
           <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+          <Route element={<RotaAlterarSenha />}>
+            <Route path="/alterar-senha" element={<AlterarSenha />} />
+          </Route>
 
           {/* Área do Motorista */}
           <Route element={<RotaMotorista />}>
