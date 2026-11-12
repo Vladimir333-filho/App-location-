@@ -47,16 +47,13 @@ function normalizarFatores(dados) {
   return [...(dados?.totp || []), ...(dados?.phone || [])];
 }
 
-/* A listagem de factores usa a API REST; GET /auth/v1/factors não é suportado. */
+/* RPC seguro: devolve apenas os factores TOTP verificados do utilizador autenticado. */
 async function listarFatoresServidor(sessao) {
   const { url, anonKey } = getLigacao();
-  const resposta = await fetch(`${url}/rest/v1/factors?select=id,factor_type,status,friendly_name`, {
-    method: 'GET',
-    headers: {
-      ...cabecalhos(sessao?.access_token, anonKey),
-      Accept: 'application/json',
-      'Accept-Profile': 'auth',
-    },
+  const resposta = await fetch(`${url}/rest/v1/rpc/quotamob_listar_meus_fatores_mfa`, {
+    method: 'POST',
+    headers: cabecalhos(sessao?.access_token, anonKey),
+    body: JSON.stringify({}),
   });
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
