@@ -135,7 +135,7 @@ export async function alterarSenhaTemporaria(palavraPasseNova) {
     throw new Error(detalhe || 'Não foi possível actualizar a palavra-passe.');
   }
 
-  await chamarFuncao('quotamob_concluir_alteracao_senha', {});
+  await chamarFuncao('quotamob_concluir_alteracao_senha', { p_nova: palavraPasseNova });
   const utilizador = { ...(sessao.utilizador || {}) };
   const appMetadata = { ...(utilizador.app_metadata || {}) };
   delete appMetadata.quotamob_must_change_password;
