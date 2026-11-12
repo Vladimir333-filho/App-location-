@@ -138,7 +138,7 @@ export default function Motoristas() {
             onClick={() => { setErro(''); setReconciliacao({ nome: '', telefone: '' }); }}
             className="flex h-11 items-center gap-1.5 rounded-2xl border border-primary/20 bg-white px-3 text-[11px] font-bold text-primary"
           >
-            <KeyRound className="h-4 w-4" /> Recuperar
+            <KeyRound className="h-4 w-4" /> Recuperar perfil
           </button>
           <button
             onClick={() => {
