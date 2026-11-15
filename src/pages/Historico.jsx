@@ -16,8 +16,12 @@ export default function Historico() {
   const [erro, setErro] = useState('');
 
   async function descarregarReciboAoClicar({ motorista, quota, pagamento }) {
-    const { descarregarRecibo } = await import('@/lib/recibo');
-    descarregarRecibo({ motorista, quota, pagamento });
+    try {
+      const { descarregarRecibo } = await import('@/lib/recibo');
+      descarregarRecibo({ motorista, quota, pagamento });
+    } catch {
+      setErro('Não foi possível gerar o recibo. Tenta novamente.');
+    }
   }
 
   async function carregar() {
