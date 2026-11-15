@@ -74,10 +74,10 @@ async function pedirToken(telefone, palavraPasse) {
 }
 
 const SEM_SCRIPT =
-  'A reposição automática ainda não está ligada. No painel, abre Configurações e copia o script para o Supabase.';
+  'A reposição segura é feita por um administrador activo através do painel de motoristas.';
 
 // Chama uma função criada no Supabase (SQL) que trata das contas de autenticação.
-export export async function chamarFuncao(nome, corpo) {
+export async function chamarFuncao(nome, corpo) {
   const { url, anonKey } = config();
   const sessao = await sessaoValida();
   const resposta = await pedidoFetch(`${url}/rest/v1/rpc/${nome}`, {
