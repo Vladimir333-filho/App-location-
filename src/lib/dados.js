@@ -1,6 +1,7 @@
 import {
   BUCKET_COMPROVATIVOS,
   contarLinhas,
+  chamarFuncao,
   enviarComprovativo,
   linkComprovativo,
   pedir,
@@ -32,6 +33,7 @@ export function escolher(linha, candidatos, defeito = null) {
 
 export function estadoQuota(valor, vencimento) {
   const texto = limpo(valor);
+  if (texto.includes('cancel') || texto.includes('anulad')) return 'cancelada';
   if (texto.includes('pag') || texto.includes('quit') || texto.includes('liquid') || texto.includes('aprov')) return 'paga';
   if (texto.includes('analise') || texto.includes('comprov') || texto.includes('espera')) return 'em_analise';
   if (texto.includes('atras') || texto.includes('divida')) return 'atrasada';
@@ -126,53 +128,70 @@ export async function pagamentosDoMotorista(motoristaId) {
     .sort((a, b) => String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
 }
 
-export async function atualizarEstadoQuota(quotaId, estado) {
-  await pedir('quotas', {
-    metodo: 'PATCH',
-    query: `id=eq.${quotaId}`,
-    corpo: { estado },
-    prefer: 'return=minimal',
-  });
-}
-
-export async function submeterComprovativo({ quota, motoristaId, valorPago, ficheiro }) {
-  // Segunda barreira: mesmo que a página falhe, o ficheiro tem de cumprir a regra.
+export async function submeterComprovativo({ quota, motoristaId, ficheiro }) {
   await validarComprovativo(ficheiro);
+  const valorDaQuota = Number(quota?.valor);
+  if (!quota?.id || !motoristaId || !Number.isFinite(valorDaQuota) || valorDaQuota <= 0) {
+    throw new Error('A quota ou o valor oficial não são válidos. Actualiza a página e tenta novamente.');
+  }
+  if (String(quota.motoristaId) !== String(motoristaId)) {
+    throw new Error('Esta quota não pertence à tua conta.');
+  }
+
+  if (String(quota.motoristaId) !== String(motoristaId)) {
+    throw new Error('Esta quota não pertence à tua conta.');
+  }
+  if (quota.estado !== 'pendente' && quota.estado !== 'atrasada') {
+    throw new Error('Esta quota não está disponível para submissão de comprovativo. Actualiza a página.');
+  }
 
   const caminho = `${motoristaId}/${quota.id}-${Date.now()}.pdf`;
   await enviarComprovativo(ficheiro, caminho);
 
-  const corpo = {
-    quota_id: quota.id,
-    motorista_id: motoristaId,
-    valor_kz: valorPago,
-    comprovativo_path: caminho,
-    estado: 'em_analise',
-  };
-
-  await pedir('pagamentos', { metodo: 'POST', corpo: [corpo], prefer: 'return=minimal' });
-  await atualizarEstadoQuota(quota.id, 'em_analise');
+  // O valor é sempre lido da quota oficial; o trigger actualiza o estado
+  // da quota na mesma transacção do INSERT do pagamento.
+  await pedir('pagamentos', {
+    metodo: 'POST',
+    corpo: [{
+      quota_id: quota.id,
+      motorista_id: motoristaId,
+      valor_kz: valorDaQuota,
+      comprovativo_path: caminho,
+      estado: 'em_analise',
+    }],
+    prefer: 'return=minimal',
+  });
   return caminho;
 }
 
 export async function aprovarPagamento(pagamento) {
-  await pedir('pagamentos', {
+  if (!pagamento?.id) throw new Error('Pagamento inválido.');
+  // O trigger do banco actualiza quota e auditoria atomicamente.
+  const actualizados = await pedir('pagamentos', {
     metodo: 'PATCH',
-    query: `id=eq.${pagamento.id}`,
+    query: `id=eq.${pagamento.id}&estado=eq.em_analise`,
     corpo: { estado: 'aprovado' },
-    prefer: 'return=minimal',
+    prefer: 'return=representation',
   });
-  if (pagamento.quotaId) await atualizarEstadoQuota(pagamento.quotaId, 'paga');
+  if (!Array.isArray(actualizados) || actualizados.length === 0) {
+    throw new Error('Este pagamento já foi tratado ou não tens autorização para o aprovar.');
+  }
 }
 
 export async function rejeitarPagamento(pagamento, motivo) {
-  await pedir('pagamentos', {
+  if (!pagamento?.id) throw new Error('Pagamento inválido.');
+  const justificacao = String(motivo || '').trim().slice(0, 500);
+  if (!justificacao) throw new Error('Indica o motivo da rejeição.');
+  // O trigger do banco actualiza quota e auditoria atomicamente.
+  const actualizados = await pedir('pagamentos', {
     metodo: 'PATCH',
-    query: `id=eq.${pagamento.id}`,
-    corpo: { estado: 'rejeitado', motivo_rejeicao: motivo },
-    prefer: 'return=minimal',
+    query: `id=eq.${pagamento.id}&estado=eq.em_analise`,
+    corpo: { estado: 'rejeitado', motivo_rejeicao: justificacao },
+    prefer: 'return=representation',
   });
-  if (pagamento.quotaId) await atualizarEstadoQuota(pagamento.quotaId, 'pendente');
+  if (!Array.isArray(actualizados) || actualizados.length === 0) {
+    throw new Error('Este pagamento já foi tratado ou não tens autorização para o rejeitar.');
+  }
 }
 
 export async function criarRegistoMotorista({ nome, telefone, role = 'motorista', utilizadorId }) {
@@ -246,72 +265,15 @@ export async function gerarQuotas({ referencia, valor, vencimento, motoristas })
   return corpo.length;
 }
 
-function explicarFalhaAoCancellar(tabela, falha) {
-  const texto = String(falha?.message || '').toLowerCase();
-  if (texto.includes('foreign key') || texto.includes('violates') || texto.includes('23503')) {
-    const auditado = texto.includes('auditoria');
-    return new Error(
-      auditado
-        ? 'A base de dados guarda auditoria destes pagamentos e não deixou apagar. É preciso autorizar o DELETE na tabela "auditoria_pagamentos".'
-        : 'Estes registos têm histórico ligado na base de dados e não podem ser apagados enquanto ele existir.',
-    );
+export async function cancelarQuotas(ids) {
+  const unicos = [...new Set((Array.isArray(ids) ? ids : []).map((id) => String(id)))];
+  if (unicos.length === 0) return 0;
+  if (unicos.length > 500 || unicos.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) {
+    throw new Error('A selecção de quotas é inválida.');
   }
-  const detalhe = String(falha?.message || '').trim();
-  return new Error(
-    `A base de dados não deixou apagar em "${tabela}".${detalhe ? ` (${detalhe})` : ''} No Supabase, a tabela precisa de uma política de DELETE para utilizadores com sessão.`,
-  );
-}
-
-// A tabela de auditoria é opcional: se ainda não existir no Supabase, a sua
-// ausência não pode impedir a eliminação de quotas ou motoristas.
-async function limparAuditoria(idsPagamentos) {
-  if (!Array.isArray(idsPagamentos) || idsPagamentos.length === 0) return;
-  try {
-    await pedir('auditoria_pagamentos', {
-      metodo: 'DELETE',
-      query: `pagamento_id=in.(${idsPagamentos.join(',')})`,
-      prefer: 'return=minimal',
-    });
-  } catch {
-    /* tabela opcional */
-  }
-}
-
-export async function eliminarQuotas(ids) {
-  if (!Array.isArray(ids) || ids.length === 0) return 0;
-  const filtro = `id=in.(${ids.map((id) => String(id)).join(',')})`;
-
-  // Os comprovativos (e a auditoria deles) apontam para estas quotas: saem primeiro.
-  const pagamentosLigados = await pedirTudo(
-    'pagamentos',
-    `select=id&quota_id=in.(${ids.map((id) => String(id)).join(',')})`,
-  );
-  const idsPagamentos = (Array.isArray(pagamentosLigados) ? pagamentosLigados : []).map((linha) => linha.id);
-  if (idsPagamentos.length > 0) {
-    await limparAuditoria(idsPagamentos);
-    await pedir('pagamentos', {
-      metodo: 'DELETE',
-      query: `id=in.(${idsPagamentos.join(',')})`,
-      prefer: 'return=minimal',
-    });
-  }
-
-  let apagadas;
-  try {
-    apagadas = await pedir('quotas', { metodo: 'DELETE', query: filtro, prefer: 'return=representation' });
-  } catch (falha) {
-    throw explicarFalhaAoCancellar('quotas', falha);
-  }
-
-  const total = Array.isArray(apagadas) ? apagadas.length : 0;
-  if (total > 0) return total;
-
-  // Sem linhas devolvidas: confirmamos se ficaram na tabela antes de dizer que apagou.
-  const restantes = await pedir('quotas', { query: `select=id&${filtro}&limit=1000` });
-  if (Array.isArray(restantes) && restantes.length > 0) {
-    throw explicarFalhaAoCancellar('quotas', null);
-  }
-  return 0;
+  // O servidor só cancela quotas sem pagamentos associados e preserva todo o histórico.
+  const resultado = await chamarFuncao('quotamob_cancelar_quotas', { p_ids: unicos });
+  return Number(resultado) || 0;
 }
 
 export async function eliminarMotorista(motoristaId) {

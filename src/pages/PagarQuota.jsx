@@ -20,7 +20,6 @@ export default function PagarQuota() {
   const [quota, setQuota] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
-  const [valor, setValor] = useState('');
   const [ficheiro, setFicheiro] = useState(null);
   const [aEnviar, setAEnviar] = useState(false);
   const [copiado, setCopiado] = useState('');
@@ -38,7 +37,6 @@ export default function PagarQuota() {
         const encontrada = lista.find((q) => String(q.id) === String(quotaId));
         if (!vivo) return;
         setQuota(encontrada || null);
-        if (encontrada) setValor(String(Math.round(encontrada.valor)));
       } catch (falha) {
         if (vivo) setErro(falha.message);
       } finally {
@@ -87,9 +85,8 @@ export default function PagarQuota() {
       setErro('Já existe um comprovativo em análise para esta quota.');
       return;
     }
-    const quantia = Number(String(valor).replace(/[^\d.]/g, ''));
-    if (!quantia || quantia <= 0) {
-      setErro('Escreve o valor que pagaste, em kwanzas.');
+    if (!Number.isFinite(Number(quota.valor)) || Number(quota.valor) <= 0) {
+      setErro('O valor oficial desta quota não é válido. Contacta a administração.');
       return;
     }
     if (!ficheiro) {
@@ -101,7 +98,6 @@ export default function PagarQuota() {
       await submeterComprovativo({
         quota,
         motoristaId: perfil.id,
-        valorPago: quantia,
         ficheiro,
       });
       setEnviado(true);
@@ -215,13 +211,14 @@ export default function PagarQuota() {
 
         <section className="card-suave p-4">
           <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            Valor pago (Kz)
+            Valor oficial da quota (Kz)
           </label>
           <input
-            value={valor}
-            onChange={(e) => setValor(e.target.value.replace(/[^\d]/g, ''))}
+            value={String(Math.round(quota.valor))}
+            readOnly
+            aria-readonly="true"
             inputMode="numeric"
-            className="h-14 w-full rounded-2xl border border-input bg-white px-4 font-heading text-xl font-bold outline-none focus:border-primary"
+            className="h-14 w-full rounded-2xl border border-input bg-muted/50 px-4 font-heading text-xl font-bold outline-none"
           />
 
           <p className="mb-2 mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">

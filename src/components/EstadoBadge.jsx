@@ -3,6 +3,7 @@ const ESTADOS = {
   em_analise: { rotulo: 'Em análise', classe: 'bg-sky-100 text-sky-900 ring-sky-200', ponto: 'bg-sky-500' },
   paga: { rotulo: 'Paga', classe: 'bg-emerald-100 text-emerald-900 ring-emerald-200', ponto: 'bg-emerald-500' },
   atrasada: { rotulo: 'Atrasada', classe: 'bg-red-100 text-red-800 ring-red-200', ponto: 'bg-red-500' },
+  cancelada: { rotulo: 'Cancelada', classe: 'bg-slate-100 text-slate-700 ring-slate-200', ponto: 'bg-slate-500' },
   aprovado: { rotulo: 'Aprovado', classe: 'bg-emerald-100 text-emerald-900 ring-emerald-200', ponto: 'bg-emerald-500' },
   rejeitado: { rotulo: 'Rejeitado', classe: 'bg-red-100 text-red-800 ring-red-200', ponto: 'bg-red-500' },
 };

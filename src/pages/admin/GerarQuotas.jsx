@@ -6,7 +6,7 @@ import { Carregando, ErroCaixa } from '@/components/Estados';
 import {
   QUOTA_SEMANAL_MAXIMA,
   SEMANAS_DO_MES,
-  eliminarQuotas,
+  cancelarQuotas,
   gerarQuotas,
   limpo,
   listarMotoristas,
@@ -191,8 +191,8 @@ export default function GerarQuotas() {
       <QuotasGeradas
         quotas={quotas}
         quotasComPagamento={quotasComPagamento}
-        aoEliminar={async (ids) => {
-          await eliminarQuotas(ids);
+        aoCancelar={async (ids) => {
+          await cancelarQuotas(ids);
           await carregar();
         }}
       />

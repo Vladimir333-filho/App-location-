@@ -5,7 +5,6 @@ import EstadoBadge from '@/components/EstadoBadge';
 import { Carregando, ErroCaixa, Vazio } from '@/components/Estados';
 import { pagamentosDoMotorista, quotasDoMotorista } from '@/lib/dados';
 import { formatKz, formatData } from '@/lib/format';
-import { descarregarRecibo } from '@/lib/recibo';
 import { useSessao } from '@/lib/sessao';
 
 export default function Historico() {
@@ -15,6 +14,15 @@ export default function Historico() {
   const [quotasPorId, setQuotasPorId] = useState({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+
+  async function descarregarReciboAoClicar({ motorista, quota, pagamento }) {
+    try {
+      const { descarregarRecibo } = await import('@/lib/recibo');
+      descarregarRecibo({ motorista, quota, pagamento });
+    } catch {
+      setErro('Não foi possível gerar o recibo. Tenta novamente.');
+    }
+  }
 
   async function carregar() {
     if (!perfil?.id) return;
@@ -86,7 +94,7 @@ export default function Historico() {
                 )}
 
                 <button
-                  onClick={() => descarregarRecibo({ motorista: perfil, quota, pagamento })}
+                  onClick={() => descarregarReciboAoClicar({ motorista: perfil, quota, pagamento })}
                   className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-primary/5 text-sm font-bold text-primary"
                 >
                   <Download className="h-4 w-4" />
