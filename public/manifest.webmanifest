@@ -30,7 +30,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/quotamob-512.svg",
+      "src": "/icons/quotamob-maskable.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
