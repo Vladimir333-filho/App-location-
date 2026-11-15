@@ -88,8 +88,8 @@ export default function Configuracoes() {
 
       <CartaoScript
         icone={KeyRound}
-        titulo="Reposição automática"
-        texto="Liga uma só vez a reposição automática de palavras-passe: o motorista escolhe a nova e ela fica ativa, sem passar por ti."
+        titulo="Reposição segura de palavra-passe"
+        texto="A reposição é iniciada pelo administrador activo. O motorista recebe uma palavra-passe temporária e define uma nova ao entrar. Não uses scripts antigos de recuperação autónoma."
         script={SQL_AUTENTICACAO}
         destino={linkSqlEditor()}
       />
