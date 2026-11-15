@@ -195,13 +195,6 @@ alter default privileges for role postgres in schema public
   revoke delete, truncate on tables from authenticated;
 alter default privileges for role postgres in schema public
   revoke execute on functions from public, anon;
-alter default privileges for role supabase_admin in schema public
-  revoke all on tables from anon;
-alter default privileges for role supabase_admin in schema public
-  revoke delete, truncate on tables from authenticated;
-alter default privileges for role supabase_admin in schema public
-  revoke execute on functions from public, anon;
-
 -- 5) Safer SECURITY DEFINER functions: fixed search_path and fully-qualified objects.
 create or replace function public.quotamob_email(p_telefone text)
 returns text
