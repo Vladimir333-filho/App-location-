@@ -77,7 +77,7 @@ const SEM_SCRIPT =
   'A reposição automática ainda não está ligada. No painel, abre Configurações e copia o script para o Supabase.';
 
 // Chama uma função criada no Supabase (SQL) que trata das contas de autenticação.
-export async function chamarFuncao(nome, corpo) {
+export export async function chamarFuncao(nome, corpo) {
   const { url, anonKey } = config();
   const sessao = await sessaoValida();
   const resposta = await pedidoFetch(`${url}/rest/v1/rpc/${nome}`, {
