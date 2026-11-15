@@ -1,177 +1,136 @@
-// Script único a colar no SQL Editor do Supabase. Liga a reposição automática
-// de palavras-passe, sem serviço externo e sem chaves privadas na app.
-export const SQL_AUTENTICACAO = String.raw`-- QuotaMob · reposição automática de palavras-passe
--- Corre este script uma vez no SQL Editor do Supabase.
-
+// QuotaMob · script seguro de reposição de palavra-passe por administrador.
+// Não permite recuperação pública por telefone + nome. O administrador activo
+// define uma senha temporária; o motorista altera-a após iniciar sessão.
+export const SQL_AUTENTICACAO = String.raw`-- QuotaMob · reposição segura de palavra-passe
 create extension if not exists pgcrypto with schema extensions;
+create schema if not exists private;
 
-create or replace function public.quotamob_email(p_telefone text)
-returns text language sql immutable as $$
-  select regexp_replace(coalesce(p_telefone, ''), '\D', '', 'g') || '@quotamob.app';
-$$;
+create table if not exists private.quotamob_password_reset_state (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  temp_password_hash text not null,
+  created_at timestamptz not null default now()
+);
+alter table private.quotamob_password_reset_state enable row level security;
+revoke all on table private.quotamob_password_reset_state from public, anon, authenticated;
 
--- 1) Tesoureiro: define a palavra-passe de um número que já existe na autenticação
 create or replace function public.quotamob_admin_definir_senha(p_telefone text, p_senha text)
 returns uuid
-language plpgsql security definer set search_path = public, extensions, auth
-as $$
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $function$
 declare
-  v_email text;
+  v_telefone text;
   v_id uuid;
+  v_total integer;
+  v_hash text;
 begin
-  if not exists (
-    select 1 from public.motoristas m
-     where m.id = auth.uid() and lower(coalesce(m.role, '')) like '%admin%'
-  ) then
-    raise exception 'Só o tesoureiro pode repor palavras-passe.';
+  if not coalesce((select private.is_admin()), false) then
+    raise exception 'Só um administrador activo pode repor palavras-passe.';
   end if;
-
-  if length(coalesce(p_senha, '')) < 6 then
-    raise exception 'A palavra-passe precisa de pelo menos 6 caracteres.';
+  v_telefone := regexp_replace(coalesce(p_telefone, ''), '[^0-9]', '', 'g');
+  if v_telefone !~ '^9[0-9]{8}$' then
+    raise exception 'O telefone deve conter exactamente 9 dígitos e começar por 9.';
   end if;
-
-  v_email := public.quotamob_email(p_telefone);
-
-  select u.id into v_id from auth.users u where lower(u.email) = lower(v_email) limit 1;
-
-  if v_id is null then
-    raise exception 'NÃO_EXISTE';
+  if length(coalesce(p_senha, '')) < 8 then
+    raise exception 'A palavra-passe temporária precisa de pelo menos 8 caracteres.';
   end if;
-
+  select count(*) into v_total
+    from public.motoristas m
+   where regexp_replace(coalesce(m.telefone, ''), '[^0-9]', '', 'g') = v_telefone
+     and m.ativo = true
+     and lower(coalesce(m.role, 'motorista')) not like '%admin%';
+  if v_total <> 1 then
+    raise exception 'Não foi encontrado um único motorista activo com este número.';
+  end if;
+  select m.id into v_id
+    from public.motoristas m
+   where regexp_replace(coalesce(m.telefone, ''), '[^0-9]', '', 'g') = v_telefone
+     and m.ativo = true
+     and lower(coalesce(m.role, 'motorista')) not like '%admin%'
+   limit 1;
+  v_hash := extensions.crypt(p_senha, extensions.gen_salt('bf'));
   update auth.users
-     set encrypted_password = crypt(p_senha, gen_salt('bf')),
+     set encrypted_password = v_hash,
          email_confirmed_at = coalesce(email_confirmed_at, now()),
+         raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+           || jsonb_build_object('quotamob_must_change_password', true),
          updated_at = now()
    where id = v_id;
-
+  if not found then
+    raise exception 'A conta de autenticação deste motorista não existe.';
+  end if;
+  insert into private.quotamob_password_reset_state(user_id, temp_password_hash, created_at)
+  values (v_id, v_hash, now())
+  on conflict (user_id) do update
+    set temp_password_hash = excluded.temp_password_hash,
+        created_at = excluded.created_at;
+  delete from auth.sessions where user_id = v_id;
   return v_id;
 end;
-$$;
+$function$;
 
+create or replace function public.quotamob_concluir_alteracao_senha(p_nova text)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $function$
+declare
+  v_id uuid := auth.uid();
+  v_hash_actual text;
+  v_hash_temporario text;
+begin
+  if v_id is null then
+    raise exception 'Inicia sessão para concluir a alteração da palavra-passe.';
+  end if;
+  if length(coalesce(p_nova, '')) < 8 then
+    raise exception 'A nova palavra-passe precisa de pelo menos 8 caracteres.';
+  end if;
+  if not exists (select 1 from public.motoristas m where m.id = v_id and m.ativo = true) then
+    raise exception 'A conta não possui um perfil activo.';
+  end if;
+  select s.temp_password_hash into v_hash_temporario
+    from private.quotamob_password_reset_state s
+   where s.user_id = v_id
+   for update;
+  if v_hash_temporario is null then
+    raise exception 'Não existe uma reposição temporária pendente para esta conta.';
+  end if;
+  select u.encrypted_password into v_hash_actual from auth.users u where u.id = v_id;
+  if v_hash_actual is null or extensions.crypt(p_nova, v_hash_actual) <> v_hash_actual then
+    raise exception 'A nova palavra-passe ainda não foi confirmada pelo serviço de autenticação.';
+  end if;
+  if extensions.crypt(p_nova, v_hash_temporario) = v_hash_temporario then
+    raise exception 'Escolhe uma palavra-passe diferente da temporária.';
+  end if;
+  update auth.users
+     set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+           - 'quotamob_must_change_password',
+         updated_at = now()
+   where id = v_id;
+  delete from private.quotamob_password_reset_state where user_id = v_id;
+  return true;
+end;
+$function$;
+
+revoke all on function public.quotamob_admin_definir_senha(text, text) from public, anon, authenticated;
+revoke all on function public.quotamob_concluir_alteracao_senha(text) from public, anon, authenticated;
 grant execute on function public.quotamob_admin_definir_senha(text, text) to authenticated;
+grant execute on function public.quotamob_concluir_alteracao_senha(text) to authenticated;
 
--- 2) Motorista: repõe sozinho, confirmando telefone + nome do registo
-create or replace function public.quotamob_repor_senha(p_telefone text, p_nome text, p_nova text)
-returns boolean
-language plpgsql security definer set search_path = public, extensions, auth
-as $$
-declare
-  v_tel text;
-  v_email text;
-  v_id uuid;
-  v_nome text;
+do $block$
 begin
-  v_tel := regexp_replace(coalesce(p_telefone, ''), '\D', '', 'g');
-
-  if length(v_tel) <> 9 then
-    raise exception 'Escreve os 9 dígitos do teu número de telefone.';
+  if to_regprocedure('public.quotamob_repor_senha(text,text,text)') is not null then
+    execute 'revoke all on function public.quotamob_repor_senha(text,text,text) from public, anon, authenticated';
   end if;
-
-  if length(coalesce(p_nova, '')) < 6 then
-    raise exception 'A nova palavra-passe precisa de pelo menos 6 caracteres.';
+  if to_regprocedure('public.quotamob_activar_numero(text,text,text)') is not null then
+    execute 'revoke all on function public.quotamob_activar_numero(text,text,text) from public, anon, authenticated';
   end if;
-
-  select m.nome into v_nome
-    from public.motoristas m
-   where regexp_replace(coalesce(m.telefone, ''), '\D', '', 'g') = v_tel
-   limit 1;
-
-  if v_nome is null then
-    raise exception 'Este número não está registado. Fala com o tesoureiro.';
+  if to_regprocedure('public.quotamob_apagar_motorista(uuid)') is not null then
+    execute 'revoke all on function public.quotamob_apagar_motorista(uuid) from public, anon, authenticated';
   end if;
-
-  if lower(trim(v_nome)) <> lower(trim(coalesce(p_nome, ''))) then
-    raise exception 'O nome não corresponde ao registo deste número.';
-  end if;
-
-  v_email := public.quotamob_email(v_tel);
-
-  select u.id into v_id from auth.users u where lower(u.email) = lower(v_email) limit 1;
-
-  if v_id is null then
-    raise exception 'A conta deste número não existe. Pede ao tesoureiro para a criar outra vez.';
-  end if;
-
-  update auth.users
-     set encrypted_password = crypt(p_nova, gen_salt('bf')),
-         email_confirmed_at = coalesce(email_confirmed_at, now()),
-         updated_at = now()
-   where id = v_id;
-
-  return true;
 end;
-$$;
+$block$;
 
-grant execute on function public.quotamob_repor_senha(text, text, text) to anon, authenticated;
-
--- 3) Tesoureiro: apaga a conta de autenticação de um motorista eliminado.
--- Sem isto o número fica preso e nunca mais pode ser registado outra vez.
-create or replace function public.quotamob_apagar_motorista(p_id uuid)
-returns boolean
-language plpgsql security definer set search_path = public, auth
-as $$
-begin
-  if not exists (
-    select 1 from public.motoristas m
-     where m.id = auth.uid() and lower(coalesce(m.role, '')) like '%admin%'
-  ) then
-    raise exception 'Só o tesoureiro pode apagar contas.';
-  end if;
-
-  delete from auth.users where id = p_id;
-  return true;
-end;
-$$;
-
-grant execute on function public.quotamob_apagar_motorista(uuid) to authenticated;
-
--- 4) Motorista: assume um número que já tem conta na autenticação mas ficou sem
--- perfil (motorista apagado). Não mexe em números que continuam registados.
-create or replace function public.quotamob_activar_numero(p_telefone text, p_nome text, p_senha text)
-returns boolean
-language plpgsql security definer set search_path = public, extensions, auth
-as $$
-declare
-  v_tel text;
-  v_email text;
-  v_id uuid;
-begin
-  v_tel := regexp_replace(coalesce(p_telefone, ''), '\D', '', 'g');
-  v_email := public.quotamob_email(v_tel);
-
-  if length(coalesce(p_senha, '')) < 6 then
-    raise exception 'A palavra-passe precisa de pelo menos 6 caracteres.';
-  end if;
-
-  if exists (
-    select 1 from public.motoristas m
-     where regexp_replace(coalesce(m.telefone, ''), '\D', '', 'g') = v_tel
-  ) then
-    raise exception 'Este número já está registado. Fala com o tesoureiro.';
-  end if;
-
-  select u.id into v_id from auth.users u where lower(u.email) = lower(v_email) limit 1;
-
-  if v_id is null then
-    raise exception 'Este número ainda não tem conta. Usa "Criar conta".';
-  end if;
-
-  update auth.users
-     set encrypted_password = crypt(p_senha, gen_salt('bf')),
-         email_confirmed_at = coalesce(email_confirmed_at, now()),
-         updated_at = now()
-   where id = v_id;
-
-  insert into public.motoristas (id, nome, telefone, role, ativo)
-  values (v_id, coalesce(nullif(trim(coalesce(p_nome, '')), ''), 'Motorista'), v_tel, 'motorista', true)
-  on conflict (id) do update
-    set nome = excluded.nome,
-        telefone = excluded.telefone,
-        ativo = true;
-
-  return true;
-end;
-$$;
-
-grant execute on function public.quotamob_activar_numero(text, text, text) to anon, authenticated;
-`;
+notify pgrst, 'reload schema';`;
