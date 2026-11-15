@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "QuotaMob — Gestão de Quotas",
+  "short_name": "QuotaMob",
+  "description": "Gestão de quotas, motoristas e pagamentos para organizações de táxis.",
+  "lang": "pt-AO",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f2b4c",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/icons/quotamob.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
