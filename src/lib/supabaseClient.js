@@ -77,7 +77,7 @@ const SEM_SCRIPT =
   'A reposição automática ainda não está ligada. No painel, abre Configurações e copia o script para o Supabase.';
 
 // Chama uma função criada no Supabase (SQL) que trata das contas de autenticação.
-async function chamarFuncao(nome, corpo) {
+export async function chamarFuncao(nome, corpo) {
   const { url, anonKey } = config();
   const sessao = await sessaoValida();
   const resposta = await pedidoFetch(`${url}/rest/v1/rpc/${nome}`, {
@@ -174,16 +174,6 @@ export async function confirmarOtpRecuperacao({ telefone, otpId, codigo, novaPal
   return chamarRecuperacaoOtp({ action: 'verify', phone: telefone, otp_id: otpId, code: codigo, new_password: novaPalavraPasse });
 }
 
-// Motorista repõe a palavra-passe sozinho, sem passar pelo tesoureiro.
-export async function reporSenhaAutomatica({ telefone, nome, palavraPasse }) {
-  await chamarFuncao('quotamob_repor_senha', {
-    p_telefone: telefone,
-    p_nome: nome,
-    p_nova: palavraPasse,
-  });
-  return true;
-}
-
 // Número que já tem conta na autenticação mas ficou sem perfil (motorista
 // apagado antes): a conta é reaproveitada e o perfil recriado.
 export async function activarNumeroExistente({ telefone, nome, palavraPasse }) {
@@ -200,12 +190,6 @@ export async function reconciliarPerfilOrfao({ telefone, nome }) {
     p_telefone: String(telefone || '').replace(/\D/g, ''),
     p_nome: String(nome || '').trim(),
   });
-}
-
-// Apaga a conta de autenticação de um motorista eliminado. Sem isto, o número
-// fica preso para sempre e ninguém o consegue voltar a registar.
-export async function apagarContaAutenticacao(utilizadorId) {
-  return chamarFuncao('quotamob_apagar_motorista', { p_id: utilizadorId });
 }
 
 export async function entrar(telefone, palavraPasse) {
