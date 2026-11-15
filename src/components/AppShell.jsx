@@ -5,6 +5,7 @@ import FotoPerfil from '@/components/FotoPerfil';
 import { contarPagamentosEmAnalise } from '@/lib/dados';
 import { useSessao } from '@/lib/sessao';
 import { useToast } from '@/components/ui/use-toast';
+import NotificacoesPush from '@/components/NotificacoesPush';
 
 export const ITENS_MOTORISTA = [
   { para: '/quotas', rotulo: 'Quotas', Icone: Wallet },
@@ -76,6 +77,7 @@ export default function AppShell({ itens, mostrarConfig }) {
               </div>
             </Link>
             <div className="flex shrink-0 items-center gap-1">
+              {administrador && <NotificacoesPush />}
               {comConfig && (
                 <Link
                   to="/admin/configuracoes"
