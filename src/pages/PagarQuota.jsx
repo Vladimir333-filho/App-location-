@@ -85,9 +85,8 @@ export default function PagarQuota() {
       setErro('Já existe um comprovativo em análise para esta quota.');
       return;
     }
-    const quantia = Number(String(valor).replace(/[^\d.]/g, ''));
-    if (!quantia || quantia <= 0) {
-      setErro('Escreve o valor que pagaste, em kwanzas.');
+    if (!Number.isFinite(Number(quota.valor)) || Number(quota.valor) <= 0) {
+      setErro('O valor oficial desta quota não é válido. Contacta a administração.');
       return;
     }
     if (!ficheiro) {
@@ -215,8 +214,9 @@ export default function PagarQuota() {
             Valor oficial da quota (Kz)
           </label>
           <input
-            value={valor}
-            onChange={(e) => setValor(e.target.value.replace(/[^\d]/g, ''))}
+            value={String(Math.round(quota.valor))}
+            readOnly
+            aria-readonly="true"
             inputMode="numeric"
             className="h-14 w-full rounded-2xl border border-input bg-muted/50 px-4 font-heading text-xl font-bold outline-none"
           />
