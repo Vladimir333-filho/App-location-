@@ -33,6 +33,7 @@ export function escolher(linha, candidatos, defeito = null) {
 
 export function estadoQuota(valor, vencimento) {
   const texto = limpo(valor);
+  if (texto.includes('cancel') || texto.includes('anulad')) return 'cancelada';
   if (texto.includes('pag') || texto.includes('quit') || texto.includes('liquid') || texto.includes('aprov')) return 'paga';
   if (texto.includes('analise') || texto.includes('comprov') || texto.includes('espera')) return 'em_analise';
   if (texto.includes('atras') || texto.includes('divida')) return 'atrasada';
@@ -137,6 +138,13 @@ export async function submeterComprovativo({ quota, motoristaId, ficheiro }) {
     throw new Error('Esta quota não pertence à tua conta.');
   }
 
+  if (String(quota.motoristaId) !== String(motoristaId)) {
+    throw new Error('Esta quota não pertence à tua conta.');
+  }
+  if (quota.estado !== 'pendente' && quota.estado !== 'atrasada') {
+    throw new Error('Esta quota não está disponível para submissão de comprovativo. Actualiza a página.');
+  }
+
   const caminho = `${motoristaId}/${quota.id}-${Date.now()}.pdf`;
   await enviarComprovativo(ficheiro, caminho);
 
@@ -159,12 +167,15 @@ export async function submeterComprovativo({ quota, motoristaId, ficheiro }) {
 export async function aprovarPagamento(pagamento) {
   if (!pagamento?.id) throw new Error('Pagamento inválido.');
   // O trigger do banco actualiza quota e auditoria atomicamente.
-  await pedir('pagamentos', {
+  const actualizados = await pedir('pagamentos', {
     metodo: 'PATCH',
     query: `id=eq.${pagamento.id}&estado=eq.em_analise`,
     corpo: { estado: 'aprovado' },
-    prefer: 'return=minimal',
+    prefer: 'return=representation',
   });
+  if (!Array.isArray(actualizados) || actualizados.length === 0) {
+    throw new Error('Este pagamento já foi tratado ou não tens autorização para o aprovar.');
+  }
 }
 
 export async function rejeitarPagamento(pagamento, motivo) {
@@ -172,12 +183,15 @@ export async function rejeitarPagamento(pagamento, motivo) {
   const justificacao = String(motivo || '').trim().slice(0, 500);
   if (!justificacao) throw new Error('Indica o motivo da rejeição.');
   // O trigger do banco actualiza quota e auditoria atomicamente.
-  await pedir('pagamentos', {
+  const actualizados = await pedir('pagamentos', {
     metodo: 'PATCH',
     query: `id=eq.${pagamento.id}&estado=eq.em_analise`,
     corpo: { estado: 'rejeitado', motivo_rejeicao: justificacao },
-    prefer: 'return=minimal',
+    prefer: 'return=representation',
   });
+  if (!Array.isArray(actualizados) || actualizados.length === 0) {
+    throw new Error('Este pagamento já foi tratado ou não tens autorização para o rejeitar.');
+  }
 }
 
 export async function criarRegistoMotorista({ nome, telefone, role = 'motorista', utilizadorId }) {
