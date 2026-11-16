@@ -137,10 +137,6 @@ export async function submeterComprovativo({ quota, motoristaId, ficheiro }) {
   if (String(quota.motoristaId) !== String(motoristaId)) {
     throw new Error('Esta quota não pertence à tua conta.');
   }
-
-  if (String(quota.motoristaId) !== String(motoristaId)) {
-    throw new Error('Esta quota não pertence à tua conta.');
-  }
   if (quota.estado !== 'pendente' && quota.estado !== 'atrasada') {
     throw new Error('Esta quota não está disponível para submissão de comprovativo. Actualiza a página.');
   }
