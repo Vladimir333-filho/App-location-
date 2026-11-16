@@ -42,8 +42,9 @@ export default function Motoristas() {
 
   const filtrados = useMemo(() => {
     const termo = pesquisa.trim().toLowerCase();
-    if (!termo) return motoristas;
-    return motoristas.filter(
+    const activosNoArquivo = motoristas.filter((motorista) => !String(motorista.nome).startsWith('Motorista removido ('));
+    if (!termo) return activosNoArquivo;
+    return activosNoArquivo.filter(
       (motorista) =>
         String(motorista.nome).toLowerCase().includes(termo) || String(motorista.telefone).includes(termo),
     );
@@ -131,7 +132,7 @@ export default function Motoristas() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="font-heading text-2xl font-extrabold text-foreground">Motoristas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{motoristas.length} registados</p>
+          <p className="mt-1 text-sm text-muted-foreground">{motoristas.filter((motorista) => !String(motorista.nome).startsWith('Motorista removido (')).length} registados</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -387,7 +388,7 @@ export default function Motoristas() {
           <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
             <h2 className="font-heading text-lg font-bold text-foreground">Eliminar motorista?</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">{aEliminar.nome}</span> perderá definitivamente o acesso e o perfil será removido da base de dados.
+              <span className="font-semibold text-foreground">{aEliminar.nome}</span> perderá definitivamente o acesso. O perfil será anonimizado e arquivado para preservar o histórico.
               As quotas, pagamentos e comprovativos serão preservados; o histórico ficará associado a uma referência anónima.
             </p>
 
