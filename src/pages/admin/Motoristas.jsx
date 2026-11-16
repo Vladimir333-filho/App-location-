@@ -103,7 +103,7 @@ export default function Motoristas() {
     setAApagar(true);
     try {
       await eliminarMotorista(aEliminar.id);
-      setMotoristas((anteriores) => anteriores.map((item) => item.id === aEliminar.id ? { ...item, ativo: false } : item));
+      setMotoristas((anteriores) => anteriores.filter((item) => item.id !== aEliminar.id));
       setAEliminar(null);
     } catch (falha) {
       setErro(falha.message);
@@ -385,10 +385,10 @@ export default function Motoristas() {
       {aEliminar && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/50 p-4 backdrop-blur-sm">
           <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
-            <h2 className="font-heading text-lg font-bold text-foreground">Desactivar motorista?</h2>
+            <h2 className="font-heading text-lg font-bold text-foreground">Eliminar motorista?</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">{aEliminar.nome}</span> ficará inactivo e deixará de poder entrar.
-              As quotas, pagamentos, comprovativos e o histórico serão preservados.
+              <span className="font-semibold text-foreground">{aEliminar.nome}</span> perderá definitivamente o acesso e o perfil será removido da base de dados.
+              As quotas, pagamentos e comprovativos serão preservados; o histórico ficará associado a uma referência anónima.
             </p>
 
             {erro && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">{erro}</p>}
@@ -406,7 +406,7 @@ export default function Motoristas() {
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60"
               >
                 {aApagar && <Loader2 className="h-4 w-4 animate-spin" />}
-                Desactivar
+                Eliminar
               </button>
             </div>
           </div>
