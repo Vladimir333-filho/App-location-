@@ -7,6 +7,7 @@ import {
   QUOTA_SEMANAL_MAXIMA,
   SEMANAS_DO_MES,
   cancelarQuotas,
+  anularQuotaPaga,
   gerarQuotas,
   limpo,
   listarMotoristas,
@@ -20,6 +21,7 @@ export default function GerarQuotas() {
   const [motoristas, setMotoristas] = useState([]);
   const [quotas, setQuotas] = useState([]);
   const [quotasComPagamento, setQuotasComPagamento] = useState(new Set());
+  const [pagamentos, setPagamentos] = useState([]);
   const [referenciasExistentes, setReferenciasExistentes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -42,6 +44,7 @@ export default function GerarQuotas() {
       setMotoristas(listaMotoristas.filter((motorista) => motorista.ativo));
       setQuotas(listaQuotas);
       setQuotasComPagamento(new Set(listaPagamentos.map((pagamento) => pagamento.quotaId)));
+      setPagamentos(listaPagamentos);
       setReferenciasExistentes(listaQuotas.map((quota) => limpo(quota.referencia)));
     } catch (falha) {
       setErro(falha.message);
@@ -191,8 +194,13 @@ export default function GerarQuotas() {
       <QuotasGeradas
         quotas={quotas}
         quotasComPagamento={quotasComPagamento}
+        pagamentos={pagamentos}
         aoCancelar={async (ids) => {
           await cancelarQuotas(ids);
+          await carregar();
+        }}
+        aoAnularPaga={async (quotaId, motivo) => {
+          await anularQuotaPaga(quotaId, motivo);
           await carregar();
         }}
       />

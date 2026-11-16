@@ -1,23 +1,41 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, Ban } from 'lucide-react';
 import { formatKz } from '@/lib/format';
 
-export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }) {
+export default function QuotasGeradas({ quotas, quotasComPagamento, pagamentos, aoCancelar, aoAnularPaga }) {
   const [confirmar, setConfirmar] = useState(null);
+  const [anular, setAnular] = useState(null);
+  const [motivo, setMotivo] = useState('');
   const [aCancelar, setACancelar] = useState(false);
+  const [aAnular, setAAnular] = useState(false);
   const [erro, setErro] = useState('');
 
   const grupos = useMemo(() => {
     const mapa = {};
+    const pagamentosPorQuota = new Map();
+    (pagamentos || []).forEach((pagamento) => {
+      const lista = pagamentosPorQuota.get(pagamento.quotaId) || [];
+      lista.push(pagamento);
+      pagamentosPorQuota.set(pagamento.quotaId, lista);
+    });
+
     quotas.forEach((quota) => {
       const chave = quota.referencia || 'Sem referência';
-      if (!mapa[chave]) mapa[chave] = { referencia: chave, ids: [], idsSemPagamento: [], valor: quota.valor, comHistorico: 0 };
+      if (!mapa[chave]) mapa[chave] = { referencia: chave, ids: [], idsSemPagamento: [], quotasPagas: [], valor: quota.valor, comHistorico: 0 };
       mapa[chave].ids.push(quota.id);
       if (quotasComPagamento.has(quota.id)) mapa[chave].comHistorico += 1;
       else if (quota.estado === 'pendente' || quota.estado === 'atrasada') mapa[chave].idsSemPagamento.push(quota.id);
+
+      if (quota.estado === 'paga') {
+        const associados = pagamentosPorQuota.get(quota.id) || [];
+        const aprovados = associados.filter((pagamento) => pagamento.estado === 'aprovado');
+        if (aprovados.length === 1 && !associados.some((pagamento) => pagamento.estado === 'em_analise')) {
+          mapa[chave].quotasPagas.push(quota);
+        }
+      }
     });
     return Object.values(mapa);
-  }, [quotas, quotasComPagamento]);
+  }, [quotas, quotasComPagamento, pagamentos]);
 
   async function eliminar() {
     setErro('');
@@ -32,35 +50,71 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
     }
   }
 
+  async function confirmarAnulacao() {
+    setErro('');
+    setAAnular(true);
+    try {
+      await aoAnularPaga(anular.id, motivo);
+      setAnular(null);
+      setMotivo('');
+    } catch (falha) {
+      setErro(falha.message);
+    } finally {
+      setAAnular(false);
+    }
+  }
+
   if (grupos.length === 0) return null;
 
   return (
     <section className="space-y-2">
       <div>
         <h2 className="font-heading text-base font-bold text-foreground">Quotas geradas</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">Cancela quotas criadas por engano sem apagar registos financeiros.</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Cancela quotas sem pagamento ou anula quotas pagas, mantendo o histórico financeiro.</p>
       </div>
 
       {grupos.map((grupo) => (
-        <div key={grupo.referencia} className="flex items-center gap-3 rounded-2xl bg-white p-3.5 ring-1 ring-border/70">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-foreground">{grupo.referencia}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {grupo.ids.length} quotas · {formatKz(grupo.valor)}
-              {grupo.comHistorico > 0 ? ` · ${grupo.comHistorico} com histórico` : ''}
-            </p>
+        <div key={grupo.referencia} className="space-y-2 rounded-2xl bg-white p-3.5 ring-1 ring-border/70">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-foreground">{grupo.referencia}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {grupo.ids.length} quotas · {formatKz(grupo.valor)}
+                {grupo.comHistorico > 0 ? ` · ${grupo.comHistorico} com histórico` : ''}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setErro('');
+                setConfirmar(grupo);
+              }}
+              disabled={grupo.idsSemPagamento.length === 0}
+              title={grupo.idsSemPagamento.length === 0 ? 'Não há quotas sem pagamentos que possam ser canceladas.' : 'Cancelar apenas quotas sem pagamentos associados'}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-3 text-[11px] font-bold text-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Cancelar sem pagamento
+            </button>
           </div>
-          <button
-            onClick={() => {
-              setErro('');
-              setConfirmar(grupo);
-            }}
-            disabled={grupo.idsSemPagamento.length === 0}
-            title={grupo.idsSemPagamento.length === 0 ? 'Não há quotas sem pagamentos que possam ser canceladas.' : 'Cancelar apenas quotas sem pagamentos associados'}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-3 text-[11px] font-bold text-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Cancelar
-          </button>
+
+          {grupo.quotasPagas.length > 0 && (
+            <div className="space-y-2 border-t border-border/60 pt-2">
+              {grupo.quotasPagas.map((quota) => (
+                <div key={quota.id} className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">Quota paga · {formatKz(quota.valor)}</p>
+                  <button
+                    onClick={() => {
+                      setErro('');
+                      setMotivo('');
+                      setAnular(quota);
+                    }}
+                    className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-red-50 px-3 text-[11px] font-bold text-red-700"
+                  >
+                    <Ban className="h-3.5 w-3.5" /> Anular quota paga
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
 
@@ -70,27 +124,37 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
             <h2 className="font-heading text-lg font-bold text-foreground">Cancelar quotas?</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               As <span className="font-semibold text-foreground">{confirmar.idsSemPagamento.length} quotas sem pagamentos</span> de{' '}
-              <span className="font-semibold text-foreground">{confirmar.referencia}</span> serão marcadas como canceladas. As quotas que tenham pagamentos associados ficam intactas. Nenhum pagamento, comprovativo ou registo de auditoria será apagado.
+              <span className="font-semibold text-foreground">{confirmar.referencia}</span> serão marcadas como canceladas. As quotas com pagamentos associados ficam intactas. Nenhum comprovativo ou registo financeiro será apagado.
             </p>
-
-            
-
             {erro && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">{erro}</p>}
-
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setConfirmar(null)}
-                className="h-12 rounded-2xl bg-muted text-sm font-bold text-foreground"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={eliminar}
-                disabled={aCancelar}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60"
-              >
+              <button onClick={() => setConfirmar(null)} className="h-12 rounded-2xl bg-muted text-sm font-bold text-foreground">Voltar</button>
+              <button onClick={eliminar} disabled={aCancelar} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60">
                 {aCancelar && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirmar cancelamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {anular && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-primary/50 p-4 backdrop-blur-sm">
+          <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
+            <h2 className="font-heading text-lg font-bold text-foreground">Anular quota paga?</h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              O pagamento associado passará de aprovado para anulado e a quota ficará cancelada. O comprovativo e a auditoria serão preservados. Não será feito reembolso automático.
+            </p>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-xs font-bold text-foreground">Motivo da anulação</span>
+              <textarea value={motivo} onChange={(evento) => setMotivo(evento.target.value)} maxLength={500} rows={3} placeholder="Indica o motivo..." className="w-full rounded-xl border border-input p-3 text-sm outline-none focus:border-primary" />
+            </label>
+            {erro && <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-700">{erro}</p>}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => { setAnular(null); setMotivo(''); setErro(''); }} disabled={aAnular} className="h-12 rounded-2xl bg-muted text-sm font-bold text-foreground">Voltar</button>
+              <button onClick={confirmarAnulacao} disabled={aAnular || !motivo.trim()} className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60">
+                {aAnular && <Loader2 className="h-4 w-4 animate-spin" />}
+                Confirmar anulação
               </button>
             </div>
           </div>
