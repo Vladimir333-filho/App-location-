@@ -80,8 +80,8 @@ export function SessaoProvider({ children }) {
     return () => { vivo = false; };
   }, [assumirSessao]);
 
-  const entrar = useCallback(async (telefone, palavraPasse) => {
-    const resultado = await iniciarSessaoComMfa(telefone, palavraPasse);
+  const entrar = useCallback(async (telefone, palavraPasse, captchaToken) => {
+    const resultado = await iniciarSessaoComMfa(telefone, palavraPasse, captchaToken);
     if (resultado.mfaRequired) return resultado;
     await assumirSessao(resultado.sessao);
     return { mfaRequired: false };
