@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-const SITE_KEY = '81181472-9ce2-4f96-9ef2-772cf0265f58';
+const SITE_KEY = '54b81ea0-5bbe-451c-bdee-5490e364c1b0';
 const SCRIPT_URL = 'https://js.hcaptcha.com/1/api.js?render=explicit';
 
 const HCaptcha = forwardRef(function HCaptcha({ onVerify, onExpire, onError }, ref) {
