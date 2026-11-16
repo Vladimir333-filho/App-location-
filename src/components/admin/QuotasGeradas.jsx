@@ -11,9 +11,10 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
     const mapa = {};
     quotas.forEach((quota) => {
       const chave = quota.referencia || 'Sem referência';
-      if (!mapa[chave]) mapa[chave] = { referencia: chave, ids: [], valor: quota.valor, comHistorico: 0 };
+      if (!mapa[chave]) mapa[chave] = { referencia: chave, ids: [], idsSemPagamento: [], valor: quota.valor, comHistorico: 0 };
       mapa[chave].ids.push(quota.id);
       if (quotasComPagamento.has(quota.id)) mapa[chave].comHistorico += 1;
+      else if (quota.estado === 'pendente' || quota.estado === 'atrasada') mapa[chave].idsSemPagamento.push(quota.id);
     });
     return Object.values(mapa);
   }, [quotas, quotasComPagamento]);
@@ -22,7 +23,7 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
     setErro('');
     setACancelar(true);
     try {
-      await aoCancelar(confirmar.ids);
+      await aoCancelar(confirmar.idsSemPagamento);
       setConfirmar(null);
     } catch (falha) {
       setErro(falha.message);
@@ -54,8 +55,8 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
               setErro('');
               setConfirmar(grupo);
             }}
-            disabled={grupo.comHistorico > 0}
-            title={grupo.comHistorico > 0 ? 'Há pagamentos ou comprovativos associados; o histórico deve ser preservado.' : 'Cancelar quotas sem pagamentos associados'}
+            disabled={grupo.idsSemPagamento.length === 0}
+            title={grupo.idsSemPagamento.length === 0 ? 'Não há quotas sem pagamentos que possam ser canceladas.' : 'Cancelar apenas quotas sem pagamentos associados'}
             className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-3 text-[11px] font-bold text-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" /> Cancelar
@@ -68,8 +69,8 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
           <div className="animar-surgir w-full max-w-md rounded-3xl bg-white p-5">
             <h2 className="font-heading text-lg font-bold text-foreground">Cancelar quotas?</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              As <span className="font-semibold text-foreground">{confirmar.ids.length} quotas</span> de{' '}
-              <span className="font-semibold text-foreground">{confirmar.referencia}</span> serão marcadas como canceladas. Nenhum pagamento, comprovativo ou registo de auditoria será apagado.
+              As <span className="font-semibold text-foreground">{confirmar.idsSemPagamento.length} quotas sem pagamentos</span> de{' '}
+              <span className="font-semibold text-foreground">{confirmar.referencia}</span> serão marcadas como canceladas. As quotas que tenham pagamentos associados ficam intactas. Nenhum pagamento, comprovativo ou registo de auditoria será apagado.
             </p>
 
             
@@ -89,7 +90,7 @@ export default function QuotasGeradas({ quotas, quotasComPagamento, aoCancelar }
                 className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 text-sm font-bold text-white disabled:opacity-60"
               >
                 {aCancelar && <Loader2 className="h-4 w-4 animate-spin" />}
-                Cancelar quotas
+                Confirmar cancelamento
               </button>
             </div>
           </div>
