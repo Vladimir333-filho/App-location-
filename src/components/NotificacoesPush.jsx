@@ -1,10 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BellRing, Check, Loader2 } from 'lucide-react';
 import { activarNotificacoesPush } from '@/lib/push';
 
 export default function NotificacoesPush() {
-  const [estado, setEstado] = useState('inactivo');
+  const [estado, setEstado] = useState('a_verificar');
   const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    let activo = true;
+
+    async function verificar() {
+      try {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+          if (activo) setEstado('inactivo');
+          return;
+        }
+
+        if (Notification.permission !== 'granted') {
+          if (activo) setEstado('inactivo');
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (activo) setEstado(subscription ? 'activo' : 'inactivo');
+      } catch {
+        if (activo) setEstado('inactivo');
+      }
+    }
+
+    verificar();
+    return () => {
+      activo = false;
+    };
+  }, []);
 
   async function activar() {
     setEstado('a_activar');
@@ -23,13 +52,13 @@ export default function NotificacoesPush() {
       <button
         type="button"
         onClick={activar}
-        disabled={estado === 'a_activar' || estado === 'activo'}
+        disabled={estado === 'a_verificar' || estado === 'a_activar' || estado === 'activo'}
         title={estado === 'activo' ? 'Notificações activadas neste dispositivo' : 'Activar alertas de novos pagamentos'}
         aria-label="Activar notificações push"
         className="flex h-10 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-semibold text-white transition hover:bg-white/20 disabled:opacity-70"
       >
-        {estado === 'a_activar' ? <Loader2 className="h-4 w-4 animate-spin" /> : estado === 'activo' ? <Check className="h-4 w-4" /> : <BellRing className="h-4 w-4" />}
-        <span>{estado === 'activo' ? 'Alertas activos' : estado === 'a_activar' ? 'A activar…' : 'Activar alertas'}</span>
+        {estado === 'a_verificar' || estado === 'a_activar' ? <Loader2 className="h-4 w-4 animate-spin" /> : estado === 'activo' ? <Check className="h-4 w-4" /> : <BellRing className="h-4 w-4" />}
+        <span>{estado === 'activo' ? 'Alertas activos' : estado === 'a_verificar' ? 'A verificar…' : estado === 'a_activar' ? 'A activar…' : 'Activar alertas'}</span>
       </button>
       {erro && <p role="alert" className="max-w-[180px] text-right text-[10px] text-red-100">{erro}</p>}
     </div>
