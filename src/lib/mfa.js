@@ -63,16 +63,22 @@ async function listarFatoresServidor(sessao) {
   return normalizarFatores(dados);
 }
 
-export async function iniciarSessaoComMfa(telefone, palavraPasse) {
+export async function iniciarSessaoComMfa(telefone, palavraPasse, captchaToken) {
+  if (!captchaToken) throw new Error('Conclui a verificação hCaptcha antes de entrar.');
   const { url, anonKey } = getLigacao();
   const resposta = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: cabecalhos(null, anonKey),
-    body: JSON.stringify({ email: telefoneParaEmail(telefone), password: palavraPasse }),
+    body: JSON.stringify({
+      email: telefoneParaEmail(telefone),
+      password: palavraPasse,
+      gotrue_meta_security: { captcha_token: captchaToken },
+    }),
   });
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
     const detalhe = String(dados?.error_description || dados?.msg || dados?.error || '').toLowerCase();
+    if (detalhe.includes('captcha')) throw new Error('A verificação hCaptcha expirou ou não foi aceite. Faz novamente a verificação e tenta entrar.');
     if (detalhe.includes('invalid login')) throw new Error('Número ou palavra-passe incorretos.');
     if (detalhe.includes('email not confirmed')) throw new Error('Esta conta ainda não está activada. Contacta a administração.');
     throw new Error('Não foi possível entrar. Verifica a ligação e tenta novamente.');

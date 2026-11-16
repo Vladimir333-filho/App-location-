@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import SEO from '@/components/SEO';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Lock, ShieldCheck, Smartphone, UserPlus, KeyRound } from 'lucide-react';
 import { useSessao, ehAdmin } from '@/lib/sessao';
 import { ligacaoConfigurada } from '@/lib/supabaseConfig';
 import ConfigLigacao from '@/components/ConfigLigacao';
+import HCaptcha from '@/components/HCaptcha';
 
 export default function Entrar() {
   <SEO title="QuotaMob | Entrar na conta" description="Aceda à sua conta QuotaMob para consultar quotas semanais, pagamentos e informações da sua organização." />
@@ -18,6 +19,8 @@ export default function Entrar() {
   const [configAberta, setConfigAberta] = useState(!ligacaoConfigurada());
   const [desafioMfa, setDesafioMfa] = useState(null);
   const [codigoMfa, setCodigoMfa] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const captchaRef = useRef(null);
 
   if (estado === 'pronto' && perfil) {
     return <Navigate to={sessao?.utilizador?.app_metadata?.quotamob_must_change_password === true ? '/alterar-senha' : (ehAdmin(perfil) ? '/admin' : '/quotas')} replace />;
@@ -31,13 +34,17 @@ export default function Entrar() {
       setErro('Escreve os 9 dígitos do teu número de telefone.');
       return;
     }
+    if (!captchaToken) {
+      setErro('Conclui a verificação hCaptcha antes de entrar.');
+      return;
+    }
     if (palavraPasse.length < 4) {
       setErro('A palavra-passe deve ter pelo menos 4 caracteres.');
       return;
     }
     setAEnviar(true);
     try {
-      const resultado = await entrar(numero, palavraPasse);
+      const resultado = await entrar(numero, palavraPasse, captchaToken);
       if (resultado?.mfaRequired) {
         setDesafioMfa(resultado);
         setPalavraPasse('');
@@ -45,6 +52,8 @@ export default function Entrar() {
     } catch (falha) {
       setErro(falha.message);
     } finally {
+      setCaptchaToken('');
+      captchaRef.current?.resetCaptcha();
       setAEnviar(false);
     }
   }
@@ -153,6 +162,16 @@ export default function Entrar() {
                 </div>
               </div>
 
+              <div className="rounded-2xl border border-border bg-slate-50 px-3 py-3">
+                <p className="mb-2 text-center text-xs font-semibold text-muted-foreground">Verificação de segurança</p>
+                <HCaptcha
+                  ref={captchaRef}
+                  onVerify={(token) => { setCaptchaToken(token); setErro(''); }}
+                  onExpire={() => { setCaptchaToken(''); setErro('A verificação expirou. Faz novamente o hCaptcha.'); }}
+                  onError={() => { setCaptchaToken(''); setErro('Não foi possível carregar o hCaptcha. Verifica a ligação e actualiza a página.'); }}
+                />
+              </div>
+
               {(erro || erroPerfil || semPerfil) && (
                 <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm leading-snug text-red-700">
                   {erro || erroPerfil ||
@@ -162,7 +181,7 @@ export default function Entrar() {
 
               <button
                 type="submit"
-                disabled={aEnviar}
+                disabled={aEnviar || !captchaToken}
                 className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
               >
                 {aEnviar && <Loader2 className="h-5 w-5 animate-spin" />}
