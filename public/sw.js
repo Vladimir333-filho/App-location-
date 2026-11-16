@@ -1,5 +1,5 @@
 /* QuotaMob service worker: no private API/data is cached. */
-const SW_VERSION = 'quotamob-pwa-v1';
+const SW_VERSION = 'quotamob-pwa-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
@@ -23,8 +23,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'QuotaMob';
   const options = {
     body: payload.body || 'Tens uma nova notificação.',
-    icon: '/icons/quotamob.svg',
-    badge: '/icons/quotamob.svg',
+    icon: '/icons/quotamob-512.png',
+    badge: '/icons/quotamob-512.png',
     tag: payload.tag || 'quotamob-notification',
     renotify: Boolean(payload.renotify),
     data: { url: payload.url || '/admin/aprovacoes' },
