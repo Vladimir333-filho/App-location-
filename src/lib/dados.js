@@ -273,21 +273,14 @@ export async function cancelarQuotas(ids) {
 }
 
 export async function eliminarMotorista(motoristaId) {
-  // Eliminação lógica: preserva quotas, pagamentos, comprovativos e auditoria.
-  // Nunca apagar o perfil antes da conta Auth: isso criava contas órfãs.
+  // O servidor arquiva uma referência anonimizada e elimina Auth + perfil numa única transação.
+  // Quotas, pagamentos e comprovativos permanecem intactos para auditoria.
   if (!motoristaId) throw new Error('Identificador do motorista inválido.');
-
-  const resultado = await pedir('motoristas', {
-    metodo: 'PATCH',
-    query: `id=eq.${motoristaId}`,
-    corpo: { ativo: false },
-    prefer: 'return=representation',
-  });
-
-  if (Array.isArray(resultado) && resultado.length === 0) {
-    throw new Error('Não foi possível desactivar o motorista. Confirma as permissões e tenta novamente.');
+  const resultado = await chamarFuncao('quotamob_apagar_motorista', { p_id: motoristaId });
+  if (resultado !== true) {
+    throw new Error('O servidor não confirmou a eliminação da conta do motorista.');
   }
-  return Array.isArray(resultado) ? resultado.length : 1;
+  return true;
 }
 
 export async function contarPagamentosEmAnalise() {
