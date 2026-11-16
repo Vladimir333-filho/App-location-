@@ -47,6 +47,7 @@ export function estadoQuota(valor, vencimento) {
 
 export function estadoPagamento(valor) {
   const texto = limpo(valor);
+  if (texto.includes('anulad')) return 'anulado';
   if (texto.includes('aprov')) return 'aprovado';
   if (texto.includes('rejeit') || texto.includes('recus')) return 'rejeitado';
   if (texto.includes('pago') || texto.includes('confirm')) return 'aprovado';
@@ -270,6 +271,18 @@ export async function cancelarQuotas(ids) {
   // O servidor só cancela quotas sem pagamentos associados e preserva todo o histórico.
   const resultado = await chamarFuncao('quotamob_cancelar_quotas', { p_ids: unicos });
   return Number(resultado) || 0;
+}
+
+export async function anularQuotaPaga(quotaId, motivo) {
+  if (!quotaId) throw new Error('Quota inválida.');
+  const justificacao = String(motivo || '').trim().slice(0, 500);
+  if (!justificacao) throw new Error('Indica o motivo da anulação.');
+  const resultado = await chamarFuncao('quotamob_anular_quota_paga', {
+    p_quota_id: quotaId,
+    p_motivo: justificacao,
+  });
+  if (resultado !== true) throw new Error('O servidor não confirmou a anulação da quota.');
+  return true;
 }
 
 export async function eliminarMotorista(motoristaId) {
