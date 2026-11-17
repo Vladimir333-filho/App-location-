@@ -93,11 +93,10 @@ export default function Configuracoes() {
       <section className="card-suave space-y-3 border border-destructive/20 p-4">
         <div className="flex items-center gap-2 text-destructive">
           <AlertTriangle className="h-4 w-4" />
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em]">Limpeza de comprovativos de teste</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em]">Limpeza de dados de teste</p>
         </div>
         <p className="text-sm text-muted-foreground">
-          Remove todos os ficheiros do bucket de comprovativos. Esta acção não elimina motoristas,
-          contas, quotas, pagamentos, imagens de perfil nem configurações. É irreversível.
+          Elimina as 3 contas de teste sem perfil identificadas na auditoria, os 6 perfis de motoristas já arquivados e todos os ficheiros do bucket de comprovativos. Preserva as 2 contas activas, quotas/pagamentos actuais, configurações e imagens de perfil. É irreversível.
         </p>
         {resultadoLimpeza && (
           <p className="rounded-xl bg-success/10 px-3 py-2.5 text-xs font-semibold text-success">{resultadoLimpeza}</p>
@@ -109,13 +108,13 @@ export default function Configuracoes() {
           type="button"
           disabled={limpando}
           onClick={async () => {
-            if (!window.confirm('Confirmas a eliminação permanente de TODOS os comprovativos guardados? As imagens de perfil serão preservadas.')) return;
+            if (!window.confirm('Confirmas a limpeza irreversível das 3 contas de teste identificadas, dos 6 perfis arquivados e de todos os comprovativos? As 2 contas activas e as imagens de perfil serão preservadas.')) return;
             setLimpando(true);
             setErroLimpeza('');
             setResultadoLimpeza('');
             try {
               const resultado = await limparComprovativosTeste();
-              setResultadoLimpeza(`${resultado.removidos} comprovativo(s) removido(s). Bucket de comprovativos limpo.`);
+              setResultadoLimpeza(`${resultado.contas_teste_removidas} contas de teste, ${resultado.perfis_teste_removidos} perfis arquivados e ${resultado.comprovativos_removidos} comprovativos removidos. Contas activas e fotografias preservadas.`);
             } catch (falha) {
               setErroLimpeza(falha?.message || 'Não foi possível concluir a limpeza.');
             } finally {
@@ -125,7 +124,7 @@ export default function Configuracoes() {
           className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-destructive text-sm font-semibold text-destructive-foreground disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" />
-          {limpando ? 'A limpar comprovativos…' : 'Eliminar todos os comprovativos de teste'}
+          {limpando ? 'A limpar dados de teste…' : 'Eliminar contas e comprovativos de teste'}
         </button>
       </section>
 
