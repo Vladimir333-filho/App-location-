@@ -495,3 +495,17 @@ export async function definirFoto(fotoUrl) {
   }
   return true;
 }
+
+export async function limparComprovativosTeste() {
+  const { url, anonKey } = config();
+  const sessao = await sessaoValida();
+  if (!sessao?.access_token) throw new Error('A sessão expirou. Entra novamente.');
+  const resposta = await pedidoFetch(`${url}/functions/v1/quotamob-limpar-comprovativos`, {
+    method: 'POST',
+    headers: { ...cabecalhos(sessao.access_token, anonKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) throw new Error(dados?.error || 'Não foi possível limpar os comprovativos.');
+  return dados;
+}
